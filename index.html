@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PixelVerse Chat</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&family=Noto+Sans+SC:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+      /* Custom Pixel Scrollbar */
+      ::-webkit-scrollbar {
+        width: 12px;
+        height: 12px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #2d2b40;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #ff00ff;
+        border: 2px solid #0d0c1d;
+        box-shadow: inset -2px -2px 0px rgba(0,0,0,0.2);
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #d900d9;
+      }
+      
+      /* Base Font Settings */
+      body {
+        font-family: 'VT323', monospace;
+        image-rendering: pixelated;
+        cursor: url('data:image/svg+xml;utf8,<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2 2H14V4H16V6H18V12H16V14H14V16H12V18H10V22H2V2H2ZM4 4V20H8V16H10V14H12V12H14V8H12V6H10V4H4Z" fill="white"/><path d="M4 4H10V6H12V8H14V12H12V14H10V16H8V20H4V4Z" fill="black"/></svg>'), auto;
+      }
+
+      /* Pixel Art Utilities */
+      .pixel-border {
+        box-shadow: 
+          -2px 0 0 0 black,
+          2px 0 0 0 black,
+          0 -2px 0 0 black,
+          0 2px 0 0 black;
+      }
+      
+      .pixel-shadow {
+        box-shadow: 4px 4px 0px 0px rgba(0,0,0,1);
+      }
+
+      .pixel-shadow-sm {
+        box-shadow: 2px 2px 0px 0px rgba(0,0,0,1);
+      }
+
+      .pixel-shadow-hover:hover {
+        transform: translate(-2px, -2px);
+        box-shadow: 6px 6px 0px 0px rgba(0,0,0,1);
+      }
+      
+      .pixel-shadow-active:active {
+        transform: translate(2px, 2px);
+        box-shadow: 0px 0px 0px 0px rgba(0,0,0,1);
+      }
+
+      /* Animations */
+      @keyframes float {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-4px); }
+      }
+      .animate-float {
+        animation: float 3s steps(4) infinite;
+      }
+
+      @keyframes blink {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0; }
+      }
+      .animate-cursor {
+        animation: blink 1s steps(2) infinite;
+      }
+
+      @keyframes scanline {
+        0% { transform: translateY(-100%); }
+        100% { transform: translateY(100%); }
+      }
+      .scanline-effect::after {
+        content: "";
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: linear-gradient(to bottom, transparent 50%, rgba(0, 0, 0, 0.05) 51%);
+        background-size: 100% 4px;
+        pointer-events: none;
+        z-index: 50;
+      }
+
+      /* EASTER EGG: Rainbow Mode */
+      @keyframes rainbow-cycle {
+        0% { filter: hue-rotate(0deg); }
+        100% { filter: hue-rotate(360deg); }
+      }
+      .rainbow-mode {
+        animation: rainbow-cycle 2s linear infinite;
+      }
+
+      /* EASTER EGG: Rocket Launch */
+      @keyframes launch {
+        0% { bottom: -100px; transform: translateX(-50%) scale(1); opacity: 1;}
+        20% { bottom: 20%; transform: translateX(-52%) scale(1.1); }
+        100% { bottom: 150%; transform: translateX(-48%) scale(1); opacity: 0;}
+      }
+      .animate-rocket {
+        animation: launch 4s ease-in forwards;
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.554.0",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/"
+  }
+}
+</script>
+</head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>

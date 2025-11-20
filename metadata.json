@@ -1,0 +1,7 @@
+{
+  "name": "PixelVerse Chat",
+  "description": "A high-precision pixel-art anime style LLM chat client with custom provider configuration.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
