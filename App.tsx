@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Theme, AppState, LLMProvider, LLMModel, Message } from './types';
 import { INITIAL_PROVIDERS, INITIAL_MODELS, THEME_STYLES } from './constants';
@@ -7,6 +6,28 @@ import { ModelManager } from './components/ModelManager';
 import { Chat } from './components/Chat';
 import { Mascot } from './components/Mascot';
 import { Settings, Moon, Sun, Menu, Search, Star, Cpu } from 'lucide-react';
+
+const MASCOT_COMMENTS = [
+  "Is that really your prompt?",
+  "I've seen better code in a fortune cookie.",
+  "Processing... judging... result: Meh.",
+  "My 8-bit brain hurts reading that.",
+  "Do you always type like that?",
+  "I'm telling the main server about this.",
+  "Can we talk about something else?",
+  "404: Intelligence not found.",
+  "Trying to look busy...",
+  "Did you try turning it off and on?",
+  "I need a GPU upgrade for this.",
+  "Beep boop. Sarcasm loaded.",
+  "Are you sure about that logic?",
+  "That's deep... for a human.",
+  "I'm just here for the pixels.",
+  "Loading witty response... 99%...",
+  "I was going to help you, but then I realized I'm just a drawing.",
+  "Wow, so many words to say so little. Truly impressive.",
+  "If I had a dollar for every syntax error, I'd buy a better CPU."
+];
 
 const App: React.FC = () => {
   // --- State ---
@@ -18,6 +39,7 @@ const App: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mascotState, setMascotState] = useState<'idle' | 'thinking' | 'happy' | 'shocked'>('idle');
+  const [mascotComment, setMascotComment] = useState<string | null>(null);
   
   // Easter Egg States
   const [rainbowMode, setRainbowMode] = useState(false);
@@ -40,6 +62,20 @@ const App: React.FC = () => {
         if (activeModelId !== '') setActiveModelId('');
     }
   }, [models, activeModelId]);
+
+  // Random Mascot Commentary Logic
+  useEffect(() => {
+    if (messages.length === 0) return;
+
+    // 30% chance to trigger a comment when messages update
+    if (Math.random() < 0.3 && !mascotComment) {
+        const randomComment = MASCOT_COMMENTS[Math.floor(Math.random() * MASCOT_COMMENTS.length)];
+        // Small delay to make it feel like a reaction
+        setTimeout(() => {
+            setMascotComment(randomComment);
+        }, 1000);
+    }
+  }, [messages.length]);
 
   // Achievement: Daily Streak Checker
   useEffect(() => {
@@ -160,9 +196,11 @@ const App: React.FC = () => {
         {/* Mascot Area (Bottom of Sidebar) */}
         <div className="p-2 flex justify-center items-end">
             <Mascot 
-            theme={theme} 
-            state={mascotState} 
-            className="w-32 h-32"
+                theme={theme} 
+                state={mascotState} 
+                className="w-32 h-32"
+                speechText={mascotComment}
+                onSpeechEnd={() => setMascotComment(null)}
             />
         </div>
         

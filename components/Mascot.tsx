@@ -1,20 +1,28 @@
-
 import React, { useRef, useEffect, useState } from 'react';
 import { Theme } from '../types';
 
 interface MascotProps {
   theme: Theme;
   state: 'idle' | 'thinking' | 'happy' | 'shocked';
+  speechText?: string | null;
+  onSpeechEnd?: () => void;
   className?: string;
 }
 
 type ActionState = 'none' | 'smoking' | 'glasses' | 'gaming' | 'phone' | 'wink';
 
-export const Mascot: React.FC<MascotProps> = ({ theme, state: appState, className = '' }) => {
+export const Mascot: React.FC<MascotProps> = ({ theme, state: appState, speechText, onSpeechEnd, className = '' }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [blink, setBlink] = useState(false);
   const [actionState, setActionState] = useState<ActionState>('none');
   const [smokeFrame, setSmokeFrame] = useState(0); // For animating smoke
+  
+  // Speech Bubble State
+  const [displayedText, setDisplayedText] = useState('');
+  const [isBubbleVisible, setIsBubbleVisible] = useState(false);
+  const [isFading, setIsFading] = useState(false);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   
   const isCyberpunk = theme === Theme.CYBERPUNK;
 
@@ -61,6 +69,48 @@ export const Mascot: React.FC<MascotProps> = ({ theme, state: appState, classNam
         setActionState('none');
     }, 3000);
   };
+
+  // Speech Bubble Logic
+  useEffect(() => {
+    if (speechText) {
+        // Cleanup previous runs
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        if (intervalRef.current) clearInterval(intervalRef.current);
+        
+        setIsBubbleVisible(true);
+        setIsFading(false);
+        setDisplayedText('');
+        
+        let charIndex = 0;
+        
+        // Typewriter effect
+        intervalRef.current = setInterval(() => {
+            if (charIndex < speechText.length) {
+                setDisplayedText(prev => prev + speechText[charIndex]);
+                charIndex++;
+            } else {
+                if (intervalRef.current) clearInterval(intervalRef.current);
+                
+                // Calculate reading time: 1.5s base + 50ms per char
+                const readTime = 1500 + (speechText.length * 50);
+                
+                timeoutRef.current = setTimeout(() => {
+                    setIsFading(true);
+                    // Fade out duration
+                    timeoutRef.current = setTimeout(() => {
+                        setIsBubbleVisible(false);
+                        if (onSpeechEnd) onSpeechEnd();
+                    }, 500);
+                }, readTime);
+            }
+        }, 40); 
+    }
+    
+    return () => {
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [speechText, onSpeechEnd]);
 
   // Animation Loops
   useEffect(() => {
@@ -303,7 +353,7 @@ export const Mascot: React.FC<MascotProps> = ({ theme, state: appState, classNam
       className={`relative group cursor-pointer transition-transform duration-300 ${className}`}
       onClick={handleClick}
     >
-      {/* Speech Bubble for Interaction */}
+      {/* Interaction Popup (Short) */}
       {actionState !== 'none' && (
          <div className="absolute -top-8 right-0 bg-white border-2 border-black p-1 z-20 animate-bounce">
             {actionState === 'smoking' && <span className="text-xs font-bold text-black">...</span>}
@@ -312,6 +362,28 @@ export const Mascot: React.FC<MascotProps> = ({ theme, state: appState, classNam
             {actionState === 'wink' && <span className="text-xs font-bold text-black">★</span>}
             {actionState === 'phone' && <span className="text-xs font-bold text-black">@_@</span>}
          </div>
+      )}
+
+      {/* Speech Bubble (Longer, Typewriter, Auto-wrapping) */}
+      {isBubbleVisible && (
+          <div className={`
+            absolute bottom-[105%] left-1/2 -translate-x-1/2 
+            bg-white border-4 border-black p-3 
+            w-48 z-40 
+            shadow-[4px_4px_0px_rgba(0,0,0,0.5)]
+            transition-opacity duration-500 ease-in-out
+            ${isFading ? 'opacity-0' : 'opacity-100'}
+            pointer-events-none
+          `}>
+             <p className="font-['VT323'] text-xl leading-5 text-black text-center break-words whitespace-pre-wrap">
+                {displayedText}
+             </p>
+             {/* Pixel Tail */}
+             <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 flex flex-col items-center">
+                <div className="w-4 h-2 bg-black"></div>
+                <div className="w-2 h-2 bg-black"></div>
+             </div>
+          </div>
       )}
 
       <canvas 
