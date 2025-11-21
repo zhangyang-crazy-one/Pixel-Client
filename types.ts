@@ -1,3 +1,4 @@
+
 export enum Theme {
   DARK = 'dark',
   LIGHT = 'light',
@@ -32,14 +33,18 @@ export interface LLMProvider {
   icon?: string; // emoji or css color
 }
 
+export type ModelType = 'chat' | 'embedding' | 'rerank';
+
 export interface LLMModel {
   id: string;
   providerId: string;
   name: string; // Display name
   modelId: string; // API model string (e.g. gpt-4)
-  contextLength: number;
-  maxTokens: number;
-  temperature: number;
+  type?: ModelType; // Defaults to 'chat'
+  contextLength?: number; // Optional: Chat only usually
+  maxTokens?: number; // Chat only
+  temperature?: number; // Chat only
+  dimensions?: number; // Embedding only
 }
 
 export interface AppState {

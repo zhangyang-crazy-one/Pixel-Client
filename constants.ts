@@ -26,6 +26,7 @@ export const INITIAL_MODELS: LLMModel[] = [
     providerId: 'prov_1',
     name: 'GPT-4 Turbo',
     modelId: 'gpt-4-turbo',
+    type: 'chat',
     contextLength: 128000,
     maxTokens: 4096,
     temperature: 0.7
@@ -35,6 +36,7 @@ export const INITIAL_MODELS: LLMModel[] = [
     providerId: 'prov_2',
     name: 'DeepSeek Chat',
     modelId: 'deepseek-chat',
+    type: 'chat',
     contextLength: 32000,
     maxTokens: 2048,
     temperature: 0.5

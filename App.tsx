@@ -48,22 +48,25 @@ const App: React.FC = () => {
   const [isMoonlightUnlocked, setIsMoonlightUnlocked] = useState(false);
 
   // --- Derived State ---
+  // Filter models for the chat dropdown (only chat models)
+  const chatModels = models.filter(m => m.type === 'chat' || !m.type);
+
   const activeModel = models.find(m => m.id === activeModelId) || null;
   const activeProvider = activeModel ? providers.find(p => p.id === activeModel.providerId) || null : null;
   const styles = THEME_STYLES[theme];
 
   // --- Effects ---
-  // Ensure activeModelId points to a valid model if the current one is deleted
+  // Ensure activeModelId points to a valid chat model if the current one is deleted
   useEffect(() => {
-    if (models.length > 0) {
-       const currentExists = models.some(m => m.id === activeModelId);
+    if (chatModels.length > 0) {
+       const currentExists = chatModels.some(m => m.id === activeModelId);
        if (!currentExists) {
-           setActiveModelId(models[0].id);
+           setActiveModelId(chatModels[0].id);
        }
     } else {
         if (activeModelId !== '') setActiveModelId('');
     }
-  }, [models, activeModelId]);
+  }, [models, activeModelId]); // Derived from models, so safe dependency
 
   // Random Mascot Commentary Logic
   useEffect(() => {
@@ -100,7 +103,6 @@ const App: React.FC = () => {
     }
 
     // Unlock Logic (Set to 30 days, but let's say if streak >= 30)
-    // NOTE: For testing, you can manually set localStorage 'pixel_streak' to 30
     if (streak >= 30) {
         setIsMoonlightUnlocked(true);
         if (localStorage.getItem('pixel_moonlight_notified') !== 'true') {
@@ -128,7 +130,7 @@ const App: React.FC = () => {
       setMascotState('shocked');
   };
 
-  // Konami Code Easter Egg (Original Plan)
+  // Konami Code Easter Egg
   useEffect(() => {
     const konami = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
     let cursor = 0;
@@ -136,7 +138,6 @@ const App: React.FC = () => {
       if (e.key === konami[cursor]) {
         cursor++;
         if (cursor === konami.length) {
-          // Konami also triggers rainbow now
           handleRainbowTrigger();
           alert("★ KONAMI CODE ACTIVATED: RAINBOW MODE ★");
           cursor = 0;
@@ -168,15 +169,15 @@ const App: React.FC = () => {
 
         {/* Model Selector */}
         <div className="p-4 border-b-2 border-black space-y-2">
-            <label className={`text-xs font-bold ${styles.text}`}>CURRENT MODEL</label>
+            <label className={`text-xs font-bold ${styles.text}`}>CURRENT CHAT MODEL</label>
             <PixelSelect 
                 theme={theme} 
                 value={activeModelId} 
                 onChange={(e) => setActiveModelId(e.target.value)}
                 className="text-sm"
             >
-                {models.length === 0 && <option value="">No Models Available</option>}
-                {models.map(m => (
+                {chatModels.length === 0 && <option value="">No Chat Models Available</option>}
+                {chatModels.map(m => (
                     <option key={m.id} value={m.id}>{m.name}</option>
                 ))}
             </PixelSelect>
