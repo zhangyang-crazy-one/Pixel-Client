@@ -1,47 +1,12 @@
 
 import { LLMProvider, LLMModel, Theme, AceConfig, Language } from './types';
 
-export const INITIAL_PROVIDERS: LLMProvider[] = [
-  {
-    id: 'prov_1',
-    name: 'OpenAI (Mock)',
-    type: 'openai',
-    baseUrl: 'https://api.openai.com/v1',
-    apiKey: '',
-    icon: '🟢'
-  },
-  {
-    id: 'prov_2',
-    name: 'DeepSeek (Mock)',
-    type: 'deepseek',
-    baseUrl: 'https://api.deepseek.com',
-    apiKey: '',
-    icon: '🔵'
-  }
-];
+// ApexBridge Configuration
+export const API_BASE_URL = 'http://localhost:3000';
+export const API_KEY = 'sk-apex-bridge-key'; // Replace with your actual bridge key
 
-export const INITIAL_MODELS: LLMModel[] = [
-  {
-    id: 'mod_1',
-    providerId: 'prov_1',
-    name: 'GPT-4 Turbo',
-    modelId: 'gpt-4-turbo',
-    type: 'chat',
-    contextLength: 128000,
-    maxTokens: 4096,
-    temperature: 0.7
-  },
-  {
-    id: 'mod_2',
-    providerId: 'prov_2',
-    name: 'DeepSeek Chat',
-    modelId: 'deepseek-chat',
-    type: 'chat',
-    contextLength: 32000,
-    maxTokens: 2048,
-    temperature: 0.5
-  }
-];
+export const INITIAL_PROVIDERS: LLMProvider[] = []; // Will be fetched from API
+export const INITIAL_MODELS: LLMModel[] = []; // Will be fetched from API
 
 export const INITIAL_ACE_CONFIG: AceConfig = {
   fastModelId: '',

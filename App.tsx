@@ -1,21 +1,22 @@
 
 import React, { useState, useEffect } from 'react';
 import { Theme, LLMProvider, LLMModel, Message, AceConfig, Language } from './types';
-import { INITIAL_PROVIDERS, INITIAL_MODELS, INITIAL_ACE_CONFIG, THEME_STYLES, MASCOT_COMMENTS, TRANSLATIONS } from './constants';
+import { INITIAL_ACE_CONFIG, THEME_STYLES, MASCOT_COMMENTS, TRANSLATIONS } from './constants';
 import { PixelButton, PixelSelect } from './components/PixelUI';
 import { ModelManager } from './components/ModelManager';
 import { Chat } from './components/Chat';
 import { Mascot } from './components/Mascot';
 import { Settings, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ApiClient } from './services/apiClient';
 
 const App: React.FC = () => {
   // --- State ---
   const [theme, setTheme] = useState<Theme>(Theme.LIGHT);
   const [language, setLanguage] = useState<Language>('zh');
-  const [providers, setProviders] = useState<LLMProvider[]>(INITIAL_PROVIDERS);
-  const [models, setModels] = useState<LLMModel[]>(INITIAL_MODELS);
+  const [providers, setProviders] = useState<LLMProvider[]>([]);
+  const [models, setModels] = useState<LLMModel[]>([]);
   const [aceConfig, setAceConfig] = useState<AceConfig>(INITIAL_ACE_CONFIG);
-  const [activeModelId, setActiveModelId] = useState<string>(models[0]?.id || '');
+  const [activeModelId, setActiveModelId] = useState<string>('');
   const [isModelManagerOpen, setIsModelManagerOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -27,16 +28,31 @@ const App: React.FC = () => {
   const [rainbowMode, setRainbowMode] = useState(false);
   const [isMoonlightUnlocked, setIsMoonlightUnlocked] = useState(false);
 
+  // --- Effects ---
+  // Initial Data Fetch
+  useEffect(() => {
+    const initData = async () => {
+        const fetchedProviders = await ApiClient.getProviders();
+        setProviders(fetchedProviders);
+        const fetchedModels = await ApiClient.getAllModels();
+        setModels(fetchedModels);
+        
+        if (fetchedModels.length > 0) {
+            setActiveModelId(fetchedModels[0].id);
+        }
+    };
+    initData();
+  }, []);
+
   // --- Derived State ---
-  // Filter models for the chat dropdown (only chat models)
-  const chatModels = models.filter(m => m.type === 'chat' || !m.type);
+  // Filter models for the chat dropdown (only chat/nlp models)
+  const chatModels = models.filter(m => m.type === 'chat' || m.type === 'nlp' as any || !m.type);
 
   const activeModel = models.find(m => m.id === activeModelId) || null;
   const activeProvider = activeModel ? providers.find(p => p.id === activeModel.providerId) || null : null;
   const styles = THEME_STYLES[theme];
   const t = TRANSLATIONS[language];
 
-  // --- Effects ---
   // Ensure activeModelId points to a valid chat model if the current one is deleted
   useEffect(() => {
     if (chatModels.length > 0) {
@@ -47,7 +63,7 @@ const App: React.FC = () => {
     } else {
         if (activeModelId !== '') setActiveModelId('');
     }
-  }, [models, activeModelId]); // Derived from models, so safe dependency
+  }, [models, activeModelId]);
 
   // Random Mascot Commentary Logic
   useEffect(() => {
@@ -57,7 +73,6 @@ const App: React.FC = () => {
     if (Math.random() < 0.3 && !mascotComment) {
         const currentLangComments = MASCOT_COMMENTS[language];
         const randomComment = currentLangComments[Math.floor(Math.random() * currentLangComments.length)];
-        // Small delay to make it feel like a reaction
         setTimeout(() => {
             setMascotComment(randomComment);
         }, 1000);
@@ -84,7 +99,6 @@ const App: React.FC = () => {
         localStorage.setItem('pixel_streak', streak.toString());
     }
 
-    // Unlock Logic (Set to 30 days, but let's say if streak >= 30)
     if (streak >= 30) {
         setIsMoonlightUnlocked(true);
         if (localStorage.getItem('pixel_moonlight_notified') !== 'true') {
@@ -96,13 +110,11 @@ const App: React.FC = () => {
 
   // --- Handlers ---
   
-  // Easter Egg: Rainbow Trigger
   const handleRainbowTrigger = () => {
       setRainbowMode(prev => !prev);
       setMascotState('shocked');
   };
 
-  // Konami Code Easter Egg
   useEffect(() => {
     const konami = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
     let cursor = 0;

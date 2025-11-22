@@ -1,9 +1,10 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Theme, LLMProvider, LLMModel, ModelType, AceConfig, Language } from '../types';
 import { PixelButton, PixelInput, PixelCard, PixelSelect, PixelBadge } from './PixelUI';
 import { THEME_STYLES, TRANSLATIONS } from '../constants';
 import { Trash2, Plus, Zap, X, Cpu, Save, AlertTriangle } from 'lucide-react';
+import { ApiClient } from '../services/apiClient';
 
 interface ModelManagerProps {
   theme: Theme;
@@ -49,60 +50,80 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
   // Local State for ACE Config
   const [localAceConfig, setLocalAceConfig] = useState<AceConfig>(aceConfig);
 
-  const chatModels = models.filter(m => m.type === 'chat' || !m.type);
+  // Fetch Data on Open
+  useEffect(() => {
+      const loadData = async () => {
+          const fetchedProviders = await ApiClient.getProviders();
+          onUpdateProviders(fetchedProviders);
+          
+          const fetchedModels = await ApiClient.getAllModels();
+          onUpdateModels(fetchedModels);
+      };
+      loadData();
+  }, []);
 
-  const handleAddProvider = () => {
+  const chatModels = models.filter(m => m.type === 'chat' || (m.type as any) === 'nlp' || !m.type);
+
+  const handleAddProvider = async () => {
     if (!newProvider.name || !newProvider.baseUrl) return;
-    const provider: LLMProvider = {
-      id: `prov_${Date.now()}`,
-      name: newProvider.name,
-      type: newProvider.type as any,
-      baseUrl: newProvider.baseUrl,
-      apiKey: newProvider.apiKey || '',
-      icon: '🔧'
-    };
-    onUpdateProviders([...providers, provider]);
-    setNewProvider({ type: 'custom', name: '', baseUrl: '', apiKey: '' });
+    try {
+        const created = await ApiClient.createProvider(newProvider);
+        onUpdateProviders([...providers, created]);
+        setNewProvider({ type: 'custom', name: '', baseUrl: '', apiKey: '' });
+    } catch (e) {
+        alert("Failed to create provider. Ensure backend is running.");
+    }
   };
 
-  const handleAddModel = () => {
+  const handleAddModel = async () => {
     if (!newModel.name || !newModel.modelId || !newModel.providerId) return;
     const type = newModel.type as ModelType || 'chat';
     
-    const model: LLMModel = {
-      id: `mod_${Date.now()}`,
+    const modelPayload: Partial<LLMModel> = {
       providerId: newModel.providerId,
       name: newModel.name,
       modelId: newModel.modelId,
-      type: type,
+      type: type === 'chat' ? 'nlp' as any : type, // API uses 'nlp', UI uses 'chat'
+      contextLength: newModel.contextLength,
+      maxTokens: newModel.maxTokens,
+      temperature: newModel.temperature,
+      dimensions: newModel.dimensions
     };
 
-    // Only add specific fields based on type
-    if (type === 'chat') {
-        model.contextLength = Number(newModel.contextLength) || 4096;
-        model.maxTokens = Number(newModel.maxTokens) || 2048;
-        model.temperature = Number(newModel.temperature);
+    try {
+        const created = await ApiClient.createModel(modelPayload);
+        // Normalize type back to UI standard if needed, though map handles it
+        onUpdateModels([...models, created]);
+        
+        setNewModel({ 
+            ...newModel, 
+            name: '', 
+            modelId: '' 
+        });
+    } catch (e) {
+        alert("Failed to create model.");
     }
-
-    if (type === 'embedding') {
-        model.dimensions = Number(newModel.dimensions) || 1536;
-    }
-
-    // Rerank models currently have no extra config fields based on requirements
-
-    onUpdateModels([...models, model]);
-    
-    // Reset fields (keeping providerId for convenience)
-    setNewModel({ 
-        ...newModel, 
-        name: '', 
-        modelId: '' 
-    });
   };
 
-  const handleDeleteProvider = (id: string) => {
-    onUpdateProviders(providers.filter(p => p.id !== id));
-    onUpdateModels(models.filter(m => m.providerId !== id));
+  const handleDeleteProvider = async (id: string) => {
+    if (!confirm("Delete this provider?")) return;
+    try {
+        await ApiClient.deleteProvider(id);
+        onUpdateProviders(providers.filter(p => p.id !== id));
+        onUpdateModels(models.filter(m => m.providerId !== id));
+    } catch (e) {
+        alert("Error deleting provider");
+    }
+  };
+
+  const handleDeleteModel = async (model: LLMModel) => {
+      if (!confirm("Delete this model?")) return;
+      try {
+          await ApiClient.deleteModel(model.providerId, model.id);
+          onUpdateModels(models.filter(x => x.id !== model.id));
+      } catch (e) {
+          alert("Error deleting model");
+      }
   };
 
   const runTest = () => {
@@ -124,9 +145,7 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
   };
 
   const handleSaveAceConfig = () => {
-      // Check if it was previously configured (i.e., not the first save)
       const isConfigured = aceConfig.fastModelId || aceConfig.reflectorModelId || aceConfig.curatorModelId;
-      
       if (isConfigured) {
           setShowConfirmDialog(true);
       } else {
@@ -142,8 +161,9 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
   };
 
   const getModelTypeColor = (type?: ModelType) => {
+      // Map API types to colors
       switch(type) {
-          case 'chat': return 'bg-blue-400 text-black';
+          case 'chat': case 'nlp' as any: return 'bg-blue-400 text-black';
           case 'embedding': return 'bg-purple-400 text-black';
           case 'rerank': return 'bg-orange-400 text-black';
           default: return 'bg-gray-400 text-black';
@@ -152,7 +172,7 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
 
   // Group models by type for display
   const groupedModels = {
-      chat: models.filter(m => m.type === 'chat' || !m.type),
+      chat: models.filter(m => m.type === 'chat' || m.type === 'nlp' as any || !m.type),
       embedding: models.filter(m => m.type === 'embedding'),
       rerank: models.filter(m => m.type === 'rerank')
   };
@@ -167,12 +187,11 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
           </div>
           <div className="text-xs opacity-70">{parent?.name} / {m.modelId}</div>
           <div className="text-[10px] opacity-50 mt-1 font-mono">
-             {m.type === 'chat' && m.contextLength && `CTX: ${m.contextLength}`}
-             {m.type === 'chat' && m.temperature !== undefined && ` | T: ${m.temperature}`}
+             {(m.type === 'chat' || (m.type as any) === 'nlp') && m.contextLength && `CTX: ${m.contextLength}`}
              {m.type === 'embedding' && m.dimensions && `DIM: ${m.dimensions}`}
           </div>
         </div>
-        <button onClick={() => onUpdateModels(models.filter(x => x.id !== m.id))} className="opacity-0 group-hover:opacity-100 text-red-500">
+        <button onClick={() => handleDeleteModel(m)} className="opacity-0 group-hover:opacity-100 text-red-500">
           <Trash2 size={16} />
         </button>
       </div>
