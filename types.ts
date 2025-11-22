@@ -55,6 +55,21 @@ export interface AceConfig {
   curatorModelId: string;
 }
 
+// API Types
+export interface ApiSession {
+  sessionId: string;
+  status: string;
+  createdAt: number;
+  lastActivityAt: number;
+  metadata?: any;
+}
+
+export interface SessionHistory {
+  sessionState: ApiSession;
+  telemetry: any[];
+  directives: any[];
+}
+
 export interface AppState {
   theme: Theme;
   language: Language;

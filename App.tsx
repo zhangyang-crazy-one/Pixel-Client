@@ -1,13 +1,14 @@
 
 import React, { useState, useEffect } from 'react';
-import { Theme, LLMProvider, LLMModel, Message, AceConfig, Language } from './types';
+import { Theme, LLMProvider, LLMModel, Message, AceConfig, Language, ChatSession } from './types';
 import { INITIAL_ACE_CONFIG, THEME_STYLES, MASCOT_COMMENTS, TRANSLATIONS } from './constants';
 import { PixelButton, PixelSelect } from './components/PixelUI';
 import { ModelManager } from './components/ModelManager';
 import { Chat } from './components/Chat';
 import { Mascot } from './components/Mascot';
-import { Settings, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Settings, Search, ChevronLeft, ChevronRight, Trash2, RefreshCcw } from 'lucide-react';
 import { ApiClient } from './services/apiClient';
+import { streamChatResponse } from './services/llmService';
 
 const App: React.FC = () => {
   // --- State ---
@@ -18,7 +19,15 @@ const App: React.FC = () => {
   const [aceConfig, setAceConfig] = useState<AceConfig>(INITIAL_ACE_CONFIG);
   const [activeModelId, setActiveModelId] = useState<string>('');
   const [isModelManagerOpen, setIsModelManagerOpen] = useState(false);
+  
+  const [activeSessionId, setActiveSessionId] = useState<string>('');
+  const [sessions, setSessions] = useState<ChatSession[]>([]);
+  
+  // Chat States
   const [messages, setMessages] = useState<Message[]>([]);
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [currentRequestId, setCurrentRequestId] = useState<string | null>(null);
+
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mascotState, setMascotState] = useState<'idle' | 'thinking' | 'happy' | 'shocked'>('idle');
   const [mascotComment, setMascotComment] = useState<string | null>(null);
@@ -40,9 +49,40 @@ const App: React.FC = () => {
         if (fetchedModels.length > 0) {
             setActiveModelId(fetchedModels[0].id);
         }
+        refreshSessions();
     };
     initData();
   }, []);
+
+  const refreshSessions = async () => {
+      const apiSessions = await ApiClient.getActiveSessions();
+      // Map API sessions to ChatSession type
+      const mappedSessions: ChatSession[] = apiSessions.map(s => ({
+          id: s.sessionId,
+          title: `Session ${s.sessionId.substring(0,6)}`,
+          lastUpdated: s.lastActivityAt,
+          messages: [] // Messages are not returned by session list API
+      }));
+      setSessions(mappedSessions);
+      if (mappedSessions.length > 0 && !activeSessionId) {
+          setActiveSessionId(mappedSessions[0].id);
+      } else if (mappedSessions.length === 0) {
+          createNewSession();
+      }
+  };
+
+  const createNewSession = () => {
+      const newId = `session-${Date.now()}`;
+      const newSession: ChatSession = {
+          id: newId,
+          title: 'New Conversation',
+          lastUpdated: Date.now(),
+          messages: []
+      };
+      setSessions(prev => [newSession, ...prev]);
+      setActiveSessionId(newId);
+      setMessages([]);
+  };
 
   // --- Derived State ---
   // Filter models for the chat dropdown (only chat/nlp models)
@@ -138,6 +178,75 @@ const App: React.FC = () => {
     setMessages(prev => prev.map(msg => msg.id === id ? { ...msg, content } : msg));
   };
 
+  const handleDeleteSession = async (e: React.MouseEvent, id: string) => {
+      e.stopPropagation();
+      if (confirm("Delete this session?")) {
+          await ApiClient.deleteSession(id);
+          const newSessions = sessions.filter(s => s.id !== id);
+          setSessions(newSessions);
+          if (activeSessionId === id) {
+              if (newSessions.length > 0) setActiveSessionId(newSessions[0].id);
+              else createNewSession();
+          }
+      }
+  };
+
+  const handleStopGeneration = async () => {
+      if (currentRequestId) {
+          try {
+            await ApiClient.interruptRequest(currentRequestId);
+          } catch(e) {
+              console.error("Failed to interrupt", e);
+          }
+      }
+      setIsStreaming(false);
+      setCurrentRequestId(null);
+  };
+
+  // Main Chat Handler
+  const handleSendMessage = async (msg: Message) => {
+     if (msg.role === 'assistant') {
+         // This is the placeholder from Chat component, just add it
+         setMessages(prev => [...prev, msg]);
+         return; 
+     }
+
+     setMessages(prev => [...prev, msg]);
+     setIsStreaming(true);
+     setMascotState('thinking');
+     
+     if (!activeModel || !activeProvider) {
+         setIsStreaming(false);
+         return;
+     }
+
+     const botMsgId = (Date.now() + 1).toString();
+     // Create placeholder (this logic matches Chat.tsx expectation roughly, 
+     // but effectively Chat.tsx drives this via onSendMessage calls)
+     
+     let fullContent = '';
+
+     await streamChatResponse(
+         [...messages, msg], // Pass history
+         activeModel, 
+         activeProvider, 
+         (chunk) => {
+            fullContent += chunk;
+            handleUpdateMessage(botMsgId, fullContent);
+         },
+         (requestId) => {
+             setCurrentRequestId(requestId);
+         },
+         activeSessionId
+     );
+
+     setIsStreaming(false);
+     setCurrentRequestId(null);
+     setMascotState('happy');
+     setTimeout(() => setMascotState('idle'), 2000);
+     refreshSessions(); // Update timestamps
+  };
+
   return (
     <div className={`flex h-screen w-screen overflow-hidden ${styles.bg} ${styles.text} transition-colors duration-500 scanline-effect ${rainbowMode ? 'rainbow-mode' : ''}`}>
       
@@ -170,12 +279,33 @@ const App: React.FC = () => {
             </PixelButton>
         </div>
 
-        {/* History List (Mock) */}
+        {/* History List */}
         <div className="flex-1 overflow-y-auto p-2 space-y-2">
-            <div className="text-xs opacity-50 text-center py-2">- {t.history} -</div>
-            {[1, 2, 3].map(i => (
-                <div key={i} className={`p-2 border-2 border-black hover:bg-black/10 cursor-pointer ${styles.text} text-sm truncate`}>
-                    {t.session} 00{i}: Project Kirby
+            <div className="flex justify-between items-center px-2 py-1 opacity-50">
+                <span className="text-xs">- {t.history} -</span>
+                <button onClick={refreshSessions} title="Refresh"><RefreshCcw size={12}/></button>
+            </div>
+            <PixelButton theme={theme} variant="secondary" className="w-full text-xs mb-2" onClick={createNewSession}>
+                + NEW CHAT
+            </PixelButton>
+            
+            {sessions.map(session => (
+                <div 
+                    key={session.id} 
+                    onClick={() => { setActiveSessionId(session.id); setMessages([]); }} // Clearing messages as we can't fetch history yet
+                    className={`
+                        p-2 border-2 border-black cursor-pointer text-sm truncate flex justify-between items-center group
+                        ${activeSessionId === session.id ? 'bg-black/10' : 'hover:bg-black/5'}
+                        ${styles.text}
+                    `}
+                >
+                    <span className="truncate w-32">{session.title}</span>
+                    <button 
+                        onClick={(e) => handleDeleteSession(e, session.id)}
+                        className="opacity-0 group-hover:opacity-100 text-red-500 hover:bg-red-100 rounded p-1"
+                    >
+                        <Trash2 size={12} />
+                    </button>
                 </div>
             ))}
         </div>
@@ -240,7 +370,7 @@ const App: React.FC = () => {
                 messages={messages}
                 activeModel={activeModel}
                 provider={activeProvider}
-                onSendMessage={(msg) => setMessages(prev => [...prev, msg])}
+                onSendMessage={handleSendMessage}
                 onUpdateMessage={handleUpdateMessage}
                 setMascotState={setMascotState}
                 onTriggerRainbow={handleRainbowTrigger}
@@ -248,6 +378,8 @@ const App: React.FC = () => {
                 setLanguage={setLanguage}
                 isMoonlightUnlocked={isMoonlightUnlocked}
                 searchQuery={searchQuery}
+                onStop={handleStopGeneration}
+                isStreaming={isStreaming}
              />
          </div>
       </div>

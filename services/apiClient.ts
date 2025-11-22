@@ -1,6 +1,6 @@
 
 import { API_BASE_URL, API_KEY } from '../constants';
-import { LLMModel, LLMProvider, ModelType } from '../types';
+import { LLMModel, LLMProvider, ModelType, ApiSession, SessionHistory } from '../types';
 
 const getHeaders = () => ({
   'Content-Type': 'application/json',
@@ -166,6 +166,48 @@ export const ApiClient = {
       await fetch(`${API_BASE_URL}/api/llm/providers/${providerId}/models/${modelId}`, {
           method: 'DELETE',
           headers: getHeaders()
+      });
+  },
+
+  // Sessions
+  getActiveSessions: async (cutoffTime?: number): Promise<ApiSession[]> => {
+    try {
+      const params = cutoffTime ? `?cutoffTime=${cutoffTime}` : '';
+      const res = await fetch(`${API_BASE_URL}/v1/chat/sessions/active${params}`, { headers: getHeaders() });
+      if (!res.ok) return [];
+      const data = await res.json();
+      return data.data.sessions || [];
+    } catch (e) {
+      console.error("Failed to get sessions", e);
+      return [];
+    }
+  },
+
+  deleteSession: async (conversationId: string): Promise<void> => {
+    const res = await fetch(`${API_BASE_URL}/v1/chat/sessions/${conversationId}`, {
+        method: 'DELETE',
+        headers: getHeaders()
+    });
+    if (!res.ok) throw new Error('Failed to delete session');
+  },
+
+  getSessionHistory: async (conversationId: string): Promise<SessionHistory | null> => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/v1/chat/sessions/${conversationId}/history`, { headers: getHeaders() });
+        if (!res.ok) return null;
+        const data = await res.json();
+        return data.data;
+      } catch {
+          return null;
+      }
+  },
+
+  // System
+  interruptRequest: async (requestId: string): Promise<void> => {
+      await fetch(`${API_BASE_URL}/v1/interrupt`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify({ requestId })
       });
   }
 };

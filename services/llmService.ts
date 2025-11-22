@@ -6,7 +6,9 @@ export const streamChatResponse = async (
   messages: Message[],
   model: LLMModel,
   provider: LLMProvider,
-  onChunk: (chunk: string) => void
+  onChunk: (chunk: string) => void,
+  onRequestId?: (id: string) => void,
+  conversationId?: string
 ): Promise<void> => {
   
   const messagesPayload = messages.map(m => ({
@@ -21,7 +23,8 @@ export const streamChatResponse = async (
       stream: true,
       temperature: model.temperature || 0.7,
       agent_id: 'pixel-verse-agent', // Default Agent ID
-      conversation_id: 'pixel-session-1' // Simple session isolation for demo
+      conversation_id: conversationId || 'pixel-session-1',
+      user_id: 'pixel-user'
   };
 
   try {
@@ -45,6 +48,7 @@ export const streamChatResponse = async (
 
       const decoder = new TextDecoder();
       let buffer = '';
+      let firstChunkProcessed = false;
 
       while (true) {
           const { done, value } = await reader.read();
@@ -67,6 +71,13 @@ export const streamChatResponse = async (
 
               try {
                   const json = JSON.parse(dataStr);
+                  
+                  // Extract Request ID from the first valid chunk
+                  if (!firstChunkProcessed && json.id && onRequestId) {
+                      onRequestId(json.id);
+                      firstChunkProcessed = true;
+                  }
+
                   const content = json.choices?.[0]?.delta?.content;
                   if (content) {
                       onChunk(content);
@@ -80,7 +91,5 @@ export const streamChatResponse = async (
   } catch (error) {
       console.error('Stream Error:', error);
       onChunk(`\n[Connection Error: ${error instanceof Error ? error.message : 'Unknown'}]`);
-      // If API fails, we might want to fallback to mock for demo purposes? 
-      // But the requirement is to implement interface calls.
   }
 };

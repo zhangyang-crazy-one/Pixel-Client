@@ -20,6 +20,8 @@ interface ChatProps {
   setLanguage: (lang: Language) => void;
   isMoonlightUnlocked: boolean;
   searchQuery?: string;
+  onStop?: () => void;
+  isStreaming?: boolean;
 }
 
 const CopyButton: React.FC<{ content: string }> = ({ content }) => {
@@ -58,13 +60,17 @@ export const Chat: React.FC<ChatProps> = ({
   setTheme,
   setLanguage,
   isMoonlightUnlocked,
-  searchQuery = ''
+  searchQuery = '',
+  onStop,
+  isStreaming: externalIsStreaming = false
 }) => {
   const [input, setInput] = useState('');
-  const [isStreaming, setIsStreaming] = useState(false);
+  const [localIsStreaming, setLocalIsStreaming] = useState(false);
   const [showThemeMenu, setShowThemeMenu] = useState(false);
   const [showLangMenu, setShowLangMenu] = useState(false);
   
+  const isStreaming = externalIsStreaming || localIsStreaming;
+
   const scrollRef = useRef<HTMLDivElement>(null);
   const styles = THEME_STYLES[theme];
   const t = TRANSLATIONS[language];
@@ -110,30 +116,16 @@ export const Chat: React.FC<ChatProps> = ({
     onSendMessage(userMsg);
     setInput('');
     setMascotState('thinking');
-    setIsStreaming(true);
-
-    // Create placeholder assistant message
-    const botMsgId = (Date.now() + 1).toString();
-    const botMsg: Message = {
-      id: botMsgId,
-      role: 'assistant',
-      content: '',
-      timestamp: Date.now(),
-      modelId: activeModel.id
-    };
-    onSendMessage(botMsg);
-
-    let fullContent = '';
-
-    await streamChatResponse([userMsg], activeModel, provider, (chunk) => {
-      fullContent += chunk;
-      onUpdateMessage(botMsgId, fullContent);
-    });
-
-    setIsStreaming(false);
-    setMascotState('happy');
-    setTimeout(() => setMascotState('idle'), 2000);
+    setLocalIsStreaming(true);
   };
+
+  // Reset local streaming state if messages change or parent signals stop
+  useEffect(() => {
+    if (!externalIsStreaming && localIsStreaming) {
+       setLocalIsStreaming(false);
+    }
+  }, [externalIsStreaming]);
+
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -142,7 +134,9 @@ export const Chat: React.FC<ChatProps> = ({
     }
   };
 
-  const isDisabled = (!activeModel || isStreaming) && input.trim() !== '/upup downdown left right';
+  const isDisabled = (!activeModel) && input.trim() !== '/upup downdown left right';
+  // Allow clicking the button if it's streaming (to stop)
+  const isButtonDisabled = isDisabled && !isStreaming;
 
   const ThemeOption = ({ targetTheme, icon, label }: { targetTheme: Theme, icon: React.ReactNode, label: string }) => (
       <button 
@@ -308,9 +302,10 @@ export const Chat: React.FC<ChatProps> = ({
                 )}
                 <PixelButton 
                     theme={theme} 
-                    onClick={handleSend} 
-                    disabled={(!input.trim() && !input.startsWith('/')) || isDisabled}
+                    onClick={isStreaming ? onStop : handleSend} 
+                    disabled={isButtonDisabled}
                     className="w-32 h-9"
+                    variant={isStreaming ? 'danger' : 'primary'}
                 >
                     {isStreaming ? t.stop : t.send} <Send size={16} />
                 </PixelButton>
