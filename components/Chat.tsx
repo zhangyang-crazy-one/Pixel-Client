@@ -4,7 +4,7 @@ import { Theme, Message, LLMModel, LLMProvider, Language } from '../types';
 import { PixelButton, PixelBadge } from './PixelUI';
 import { streamChatResponse } from '../services/llmService';
 import { THEME_STYLES, TRANSLATIONS } from '../constants';
-import { Send, Copy, Check, Moon, Sun, Star, Cpu, Globe, Palette, Loader2 } from 'lucide-react';
+import { Send, Copy, Check, Moon, Sun, Star, Cpu, Globe, Palette, Loader2, Brain, ChevronDown, ChevronRight } from 'lucide-react';
 
 interface ChatProps {
   theme: Theme;
@@ -45,6 +45,43 @@ const CopyButton: React.FC<{ content: string }> = ({ content }) => {
       {copied ? <Check size={14}/> : <Copy size={14}/>}
     </button>
   );
+};
+
+const ThinkingBlock: React.FC<{ content: string; theme: Theme; language: Language }> = ({ content, theme, language }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const styles = THEME_STYLES[theme];
+    const t = TRANSLATIONS[language];
+
+    return (
+        <div className={`
+            my-3 border-2 border-dashed border-opacity-50
+            ${theme === Theme.LIGHT ? 'border-gray-400 bg-gray-50' : 'border-gray-600 bg-black/20'}
+        `}>
+            <button 
+                onClick={() => setIsOpen(!isOpen)}
+                className={`
+                    w-full flex items-center gap-2 px-3 py-2 text-xs font-bold uppercase tracking-wide
+                    opacity-70 hover:opacity-100 transition-opacity
+                `}
+            >
+                <Brain size={14} />
+                <span className="flex-1 text-left">{t.thinkingProcess}</span>
+                <span className="flex items-center gap-1 opacity-50">
+                    {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                    {isOpen ? t.collapse : t.expand}
+                </span>
+            </button>
+            
+            {isOpen && (
+                <div className={`
+                    p-3 text-xs font-mono whitespace-pre-wrap leading-relaxed border-t-2 border-dashed border-opacity-30
+                    ${theme === Theme.LIGHT ? 'border-gray-400 text-gray-700' : 'border-gray-600 text-gray-400'}
+                `}>
+                    {content}
+                </div>
+            )}
+        </div>
+    );
 };
 
 export const Chat: React.FC<ChatProps> = ({ 
@@ -162,6 +199,43 @@ export const Chat: React.FC<ChatProps> = ({
       </button>
   );
 
+  // Parse message for <thinking> tags
+  const parseMessageContent = (content: string) => {
+      // Split by <thinking> tag.
+      // Format: [pre-text, thought_started...]
+      const parts = content.split('<thinking>');
+      
+      return parts.map((part, index) => {
+          if (index === 0) {
+              // This is the text before any thinking tag (or the whole text if no tag)
+              return <span key={`text-${index}`}>{part}</span>;
+          }
+
+          // This part started with <thinking>, so check if it has a closing tag
+          const closingIndex = part.indexOf('</thinking>');
+          
+          if (closingIndex !== -1) {
+              // It's a closed thought
+              const thought = part.substring(0, closingIndex);
+              const rest = part.substring(closingIndex + 11); // 11 is length of </thinking>
+              
+              return (
+                  <React.Fragment key={`group-${index}`}>
+                      <ThinkingBlock content={thought} theme={theme} language={language} />
+                      {/* Recursively parse the rest just in case multiple thinking blocks exist (rare but possible) */}
+                      {parseMessageContent(rest)}
+                  </React.Fragment>
+              );
+          } else {
+              // It's an open thought (Streaming case or malformed)
+              // We render it as a thinking block that contains the rest of the text
+              return (
+                  <ThinkingBlock key={`thinking-${index}`} content={part} theme={theme} language={language} />
+              );
+          }
+      });
+  };
+
   return (
     <div className="flex flex-col h-full relative z-10">
       {/* Backdrop for menus */}
@@ -207,7 +281,7 @@ export const Chat: React.FC<ChatProps> = ({
                 </div>
                 <div className="whitespace-pre-wrap leading-relaxed font-chat text-sm">
                   {msg.content ? (
-                      msg.content
+                      parseMessageContent(msg.content)
                   ) : (
                       // Loading state for empty content (typically last message during generation)
                       <div className="flex items-center gap-2 py-2 opacity-70">

@@ -475,3 +475,30 @@ const App: React.FC = () => {
                 setTheme={setTheme}
                 setLanguage={setLanguage}
                 isMoonlightUnlocked={isMoonlightUnlocked}
+                searchQuery={searchQuery}
+                onStop={handleStopGeneration}
+                isStreaming={isStreaming}
+             />
+         </div>
+      </div>
+
+      {/* Global Modals */}
+      {isModelManagerOpen && (
+        <ModelManager 
+            theme={theme}
+            language={language}
+            providers={providers}
+            models={models}
+            aceConfig={aceConfig}
+            onUpdateProviders={setProviders}
+            onUpdateModels={setModels}
+            onUpdateAceConfig={setAceConfig}
+            onClose={() => setIsModelManagerOpen(false)}
+        />
+      )}
+
+    </div>
+  );
+};
+
+export default App;

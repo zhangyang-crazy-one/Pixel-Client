@@ -193,7 +193,10 @@ export const TRANSLATIONS = {
     deleteSessionTitle: "DELETE SESSION?",
     deleteSessionConfirm: "Are you sure?",
     deleteSessionDesc: "This conversation history will be lost forever in the void.",
-    deleteAction: "DELETE"
+    deleteAction: "DELETE",
+    thinkingProcess: "Thinking Process",
+    expand: "Show",
+    collapse: "Hide"
   },
   zh: {
     currentChatModel: "当前对话模型",
@@ -259,7 +262,10 @@ export const TRANSLATIONS = {
     deleteSessionTitle: "删除会话？",
     deleteSessionConfirm: "确认删除？",
     deleteSessionDesc: "此会话历史记录将永久丢失。",
-    deleteAction: "删除"
+    deleteAction: "删除",
+    thinkingProcess: "思考过程",
+    expand: "展开",
+    collapse: "收起"
   },
   ja: {
     currentChatModel: "現在のチャットモデル",
@@ -325,6 +331,9 @@ export const TRANSLATIONS = {
     deleteSessionTitle: "セッション削除？",
     deleteSessionConfirm: "本当に削除しますか？",
     deleteSessionDesc: "この会話履歴は永久に失われます。",
-    deleteAction: "削除"
+    deleteAction: "削除",
+    thinkingProcess: "思考プロセス",
+    expand: "表示",
+    collapse: "非表示"
   }
 };
