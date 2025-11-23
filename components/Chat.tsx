@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Theme, Message, LLMModel, LLMProvider, Language } from '../types';
 import { PixelButton, PixelBadge } from './PixelUI';
 import { streamChatResponse } from '../services/llmService';
@@ -52,9 +52,31 @@ const CopyButton: React.FC<{ content: string }> = ({ content }) => {
   );
 };
 
-const ThinkingBlock: React.FC<{ content: string; theme: Theme; language: Language }> = ({ content, theme, language }) => {
+// Memoized Markdown Renderer to prevent re-parsing on every render
+const MarkdownRenderer: React.FC<{ text: string; theme: Theme }> = React.memo(({ text, theme }) => (
+    <ReactMarkdown
+        remarkPlugins={[remarkGfm, remarkMath]}
+        rehypePlugins={[rehypeKatex]}
+        components={{
+            a: ({node, ...props}) => <a {...props} target="_blank" rel="noopener noreferrer" />,
+            code: ({node, className, children, ...props}) => {
+                const match = /language-(\w+)/.exec(className || '');
+                const isMermaid = match && match[1] === 'mermaid';
+                
+                if (isMermaid) {
+                    return <MermaidBlock code={String(children).replace(/\n$/, '')} theme={theme} />;
+                }
+                
+                return <code className={className} {...props}>{children}</code>;
+            }
+        }}
+    >
+        {text}
+    </ReactMarkdown>
+));
+
+const ThinkingBlock: React.FC<{ content: string; theme: Theme; language: Language }> = React.memo(({ content, theme, language }) => {
     const [isOpen, setIsOpen] = useState(false);
-    const styles = THEME_STYLES[theme];
     const t = TRANSLATIONS[language];
 
     return (
@@ -83,30 +105,102 @@ const ThinkingBlock: React.FC<{ content: string; theme: Theme; language: Languag
                     ${theme === Theme.LIGHT ? 'border-gray-400 text-gray-700' : 'border-gray-600 text-gray-400'}
                     markdown-body
                 `}>
-                    <ReactMarkdown
-                        remarkPlugins={[remarkGfm, remarkMath]}
-                        rehypePlugins={[rehypeKatex]}
-                        components={{
-                            a: ({node, ...props}) => <a {...props} target="_blank" rel="noopener noreferrer" />,
-                            code: ({node, className, children, ...props}) => {
-                                const match = /language-(\w+)/.exec(className || '');
-                                const isMermaid = match && match[1] === 'mermaid';
-                                
-                                if (isMermaid) {
-                                    return <MermaidBlock code={String(children).replace(/\n$/, '')} theme={theme} />;
-                                }
-                                
-                                return <code className={className} {...props}>{children}</code>;
-                            }
-                        }}
-                    >
-                        {content}
-                    </ReactMarkdown>
+                   <MarkdownRenderer text={content} theme={theme} />
                 </div>
             )}
         </div>
     );
+});
+
+// Helper to split content by <thinking> tags
+const parseMessageContent = (content: string, theme: Theme, language: Language) => {
+    // Split by <thinking> tag.
+    const parts = content.split('<thinking>');
+    
+    return parts.map((part, index) => {
+        if (index === 0) {
+            // Text before any thinking tag
+            return (
+              <div key={`text-${index}`} className="markdown-body">
+                  <MarkdownRenderer text={part} theme={theme} />
+              </div>
+            );
+        }
+
+        const closingIndex = part.indexOf('</thinking>');
+        
+        if (closingIndex !== -1) {
+            // Closed thought
+            const thought = part.substring(0, closingIndex);
+            const rest = part.substring(closingIndex + 11); // length of </thinking>
+            
+            return (
+                <React.Fragment key={`group-${index}`}>
+                    <ThinkingBlock content={thought} theme={theme} language={language} />
+                    <div className="markdown-body">
+                       <MarkdownRenderer text={rest} theme={theme} />
+                    </div>
+                </React.Fragment>
+            );
+        } else {
+            // Open thought (Streaming)
+            return (
+                <ThinkingBlock key={`thinking-${index}`} content={part} theme={theme} language={language} />
+            );
+        }
+    });
 };
+
+interface MessageBubbleProps {
+    msg: Message;
+    theme: Theme;
+    language: Language;
+    styles: any;
+    isStreaming: boolean;
+    isLast: boolean;
+}
+
+// Memoized Message Bubble to isolate updates
+const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ msg, theme, language, styles, isStreaming, isLast }) => {
+    return (
+        <div className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+          <div 
+            className={`
+              max-w-[85%] md:max-w-[75%] p-4 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]
+              ${msg.role === 'user' ? styles.primary + ' text-white' : styles.secondary + ' ' + styles.text}
+            `}
+          >
+            <div className="flex justify-between items-center mb-2 gap-2">
+              <div className={`
+                text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 border border-black
+                ${msg.role === 'user' ? 'bg-white text-black' : 'bg-black text-white'}
+                shadow-[2px_2px_0px_0px_rgba(0,0,0,0.2)]
+              `}>
+                {msg.role}
+              </div>
+              {msg.role === 'assistant' && msg.content && (
+                 <CopyButton content={msg.content} />
+              )}
+            </div>
+            <div className="leading-relaxed font-chat text-sm">
+              {msg.content ? (
+                  parseMessageContent(msg.content, theme, language)
+              ) : (
+                  // Loading state
+                  <div className="flex items-center gap-2 py-2 opacity-70">
+                      <Loader2 size={16} className="animate-spin" />
+                      <span className="font-pixel-verse animate-pulse">Thinking...</span>
+                  </div>
+              )}
+              {/* Cursor effect */}
+              {isStreaming && isLast && msg.content && (
+                  <span className="inline-block w-2 h-4 bg-current ml-1 animate-cursor align-middle"></span>
+              )}
+            </div>
+          </div>
+        </div>
+    );
+});
 
 export const Chat: React.FC<ChatProps> = ({ 
   theme, 
@@ -136,29 +230,27 @@ export const Chat: React.FC<ChatProps> = ({
   const styles = THEME_STYLES[theme];
   const t = TRANSLATIONS[language];
 
-  // Close menus on click outside (simple implementation via backdrop)
   const closeMenus = () => {
       setShowThemeMenu(false);
       setShowLangMenu(false);
   };
 
-  // Filter messages based on search query
-  const displayMessages = searchQuery.trim()
-    ? messages.filter(msg => 
+  // Memoize displayed messages to avoid recalc on input change
+  const displayMessages = useMemo(() => {
+    if (!searchQuery.trim()) return messages;
+    return messages.filter(msg => 
         msg.content.toLowerCase().includes(searchQuery.toLowerCase()) || 
         msg.role.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    : messages;
+    );
+  }, [messages, searchQuery]);
 
   useEffect(() => {
-    // Only auto-scroll if not searching (to allow reading search results)
     if (scrollRef.current && !searchQuery) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages, searchQuery]);
 
   const handleSend = async () => {
-    // EASTER EGG: Hidden Command
     if (input.trim() === '/upup downdown left right') {
         onTriggerRainbow();
         setInput('');
@@ -180,13 +272,11 @@ export const Chat: React.FC<ChatProps> = ({
     setLocalIsStreaming(true);
   };
 
-  // Reset local streaming state if messages change or parent signals stop
   useEffect(() => {
     if (!externalIsStreaming && localIsStreaming) {
        setLocalIsStreaming(false);
     }
   }, [externalIsStreaming]);
-
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -196,7 +286,6 @@ export const Chat: React.FC<ChatProps> = ({
   };
 
   const isDisabled = (!activeModel) && input.trim() !== '/upup downdown left right';
-  // Allow clicking the button if it's streaming (to stop)
   const isButtonDisabled = isDisabled && !isStreaming;
 
   const ThemeOption = ({ targetTheme, icon, label }: { targetTheme: Theme, icon: React.ReactNode, label: string }) => (
@@ -223,78 +312,12 @@ export const Chat: React.FC<ChatProps> = ({
       </button>
   );
 
-  // Parse message for <thinking> tags and render markdown
-  const parseMessageContent = (content: string) => {
-      // Split by <thinking> tag.
-      // Format: [pre-text, thought_started...]
-      const parts = content.split('<thinking>');
-      
-      const MarkdownRenderer = ({ text }: { text: string }) => (
-        <ReactMarkdown
-            remarkPlugins={[remarkGfm, remarkMath]}
-            rehypePlugins={[rehypeKatex]}
-            components={{
-                a: ({node, ...props}) => <a {...props} target="_blank" rel="noopener noreferrer" />,
-                code: ({node, className, children, ...props}) => {
-                    const match = /language-(\w+)/.exec(className || '');
-                    const isMermaid = match && match[1] === 'mermaid';
-                    
-                    if (isMermaid) {
-                        return <MermaidBlock code={String(children).replace(/\n$/, '')} theme={theme} />;
-                    }
-                    
-                    return <code className={className} {...props}>{children}</code>;
-                }
-            }}
-        >
-            {text}
-        </ReactMarkdown>
-      );
-
-      return parts.map((part, index) => {
-          if (index === 0) {
-              // This is the text before any thinking tag (or the whole text if no tag)
-              return (
-                <div key={`text-${index}`} className="markdown-body">
-                    <MarkdownRenderer text={part} />
-                </div>
-              );
-          }
-
-          // This part started with <thinking>, so check if it has a closing tag
-          const closingIndex = part.indexOf('</thinking>');
-          
-          if (closingIndex !== -1) {
-              // It's a closed thought
-              const thought = part.substring(0, closingIndex);
-              const rest = part.substring(closingIndex + 11); // 11 is length of </thinking>
-              
-              return (
-                  <React.Fragment key={`group-${index}`}>
-                      <ThinkingBlock content={thought} theme={theme} language={language} />
-                      <div className="markdown-body">
-                         <MarkdownRenderer text={rest} />
-                      </div>
-                  </React.Fragment>
-              );
-          } else {
-              // It's an open thought (Streaming case or malformed)
-              // We render it as a thinking block that contains the rest of the text
-              return (
-                  <ThinkingBlock key={`thinking-${index}`} content={part} theme={theme} language={language} />
-              );
-          }
-      });
-  };
-
   return (
     <div className="flex flex-col h-full relative z-10">
-      {/* Backdrop for menus */}
       {(showThemeMenu || showLangMenu) && (
           <div className="fixed inset-0 z-[60] cursor-default" onClick={closeMenus}></div>
       )}
 
-      {/* Chat Area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-6 relative z-10" ref={scrollRef}>
         {messages.length === 0 ? (
            <div className={`flex flex-col items-center justify-center h-full opacity-50 select-none ${styles.text}`}>
@@ -308,50 +331,19 @@ export const Chat: React.FC<ChatProps> = ({
            </div>
         ) : (
           displayMessages.map((msg, index) => (
-            <div 
-              key={msg.id} 
-              className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
-              <div 
-                className={`
-                  max-w-[85%] md:max-w-[75%] p-4 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]
-                  ${msg.role === 'user' ? styles.primary + ' text-white' : styles.secondary + ' ' + styles.text}
-                `}
-              >
-                <div className="flex justify-between items-center mb-2 gap-2">
-                  <div className={`
-                    text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 border border-black
-                    ${msg.role === 'user' ? 'bg-white text-black' : 'bg-black text-white'}
-                    shadow-[2px_2px_0px_0px_rgba(0,0,0,0.2)]
-                  `}>
-                    {msg.role}
-                  </div>
-                  {msg.role === 'assistant' && msg.content && (
-                     <CopyButton content={msg.content} />
-                  )}
-                </div>
-                <div className="leading-relaxed font-chat text-sm">
-                  {msg.content ? (
-                      parseMessageContent(msg.content)
-                  ) : (
-                      // Loading state for empty content (typically last message during generation)
-                      <div className="flex items-center gap-2 py-2 opacity-70">
-                          <Loader2 size={16} className="animate-spin" />
-                          <span className="font-pixel-verse animate-pulse">Thinking...</span>
-                      </div>
-                  )}
-                  {/* Cursor effect if it's the last message and streaming and has content */}
-                  {isStreaming && index === messages.length - 1 && msg.content && (
-                      <span className="inline-block w-2 h-4 bg-current ml-1 animate-cursor align-middle"></span>
-                  )}
-                </div>
-              </div>
-            </div>
+            <MessageBubble 
+                key={msg.id}
+                msg={msg}
+                theme={theme}
+                language={language}
+                styles={styles}
+                isStreaming={isStreaming}
+                isLast={index === messages.length - 1}
+            />
           ))
         )}
       </div>
 
-      {/* Input Area */}
       <div className={`p-4 border-t-4 border-black ${styles.secondary} relative z-[70]`}>
         <div className="relative">
           <textarea
@@ -372,7 +364,6 @@ export const Chat: React.FC<ChatProps> = ({
           
           <div className="flex justify-between mt-2 items-center relative z-50">
              <div className="flex gap-2 items-center">
-                {/* Theme Switcher */}
                 <div className="relative">
                     {showThemeMenu && (
                         <div className={`
@@ -403,7 +394,6 @@ export const Chat: React.FC<ChatProps> = ({
                     </PixelButton>
                 </div>
 
-                {/* Language Switcher */}
                 <div className="relative">
                     {showLangMenu && (
                         <div className={`
