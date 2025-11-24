@@ -1,6 +1,56 @@
-import React from 'react';
+import React, { Component, ReactNode } from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
+
+interface ErrorBoundaryProps {
+  children: ReactNode;
+}
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: any;
+}
+
+// Simple Error Boundary to catch crashes (e.g. Import map failures or Rendering errors)
+class GlobalErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  state: ErrorBoundaryState = { hasError: false, error: null };
+
+  static getDerivedStateFromError(error: any): ErrorBoundaryState {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: any, errorInfo: any) {
+    console.error("Uncaught error:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{
+          backgroundColor: '#0D0C1D', 
+          color: '#FF00FF', 
+          height: '100vh', 
+          display: 'flex', 
+          flexDirection: 'column',
+          alignItems: 'center', 
+          justifyContent: 'center',
+          fontFamily: 'monospace',
+          textAlign: 'center',
+          padding: '20px'
+        }}>
+          <h1 style={{fontSize: '48px', marginBottom: '20px'}}>SYSTEM CRASH</h1>
+          <div style={{border: '4px solid #FF00FF', padding: '20px', maxWidth: '800px', backgroundColor: '#000'}}>
+            <p style={{color: '#FFF'}}>CRITICAL_FAILURE_DETECTED</p>
+            <p style={{color: 'red', marginTop: '20px'}}>{this.state.error?.toString()}</p>
+            <p style={{marginTop: '20px', color: '#00FFFF'}}>Please refresh the page or check the console.</p>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -10,6 +60,8 @@ if (!rootElement) {
 const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
-    <App />
+    <GlobalErrorBoundary>
+      <App />
+    </GlobalErrorBoundary>
   </React.StrictMode>
 );

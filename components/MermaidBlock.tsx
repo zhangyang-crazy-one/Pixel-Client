@@ -1,5 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
-import mermaid from 'mermaid';
+// We use the global variable from the script tag
+declare const mermaid: any;
+
 import { Theme } from '../types';
 import { THEME_STYLES } from '../constants';
 import { Loader2, AlertTriangle } from 'lucide-react';
@@ -16,7 +18,6 @@ export const MermaidBlock: React.FC<MermaidBlockProps> = ({ code, theme }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   
   // Extract hex colors from current theme styles
-  // We need to parse classes like "bg-[#0D0C1D]" or "text-[#FFEED1]"
   const getThemeColors = () => {
       const style = THEME_STYLES[theme];
       
@@ -37,6 +38,13 @@ export const MermaidBlock: React.FC<MermaidBlockProps> = ({ code, theme }) => {
 
   useEffect(() => {
     const renderDiagram = async () => {
+      // Ensure mermaid is loaded
+      if (typeof mermaid === 'undefined') {
+          setError("Mermaid library not loaded.");
+          setLoading(false);
+          return;
+      }
+
       setLoading(true);
       setError(null);
       
@@ -44,7 +52,6 @@ export const MermaidBlock: React.FC<MermaidBlockProps> = ({ code, theme }) => {
         const colors = getThemeColors();
         const isDark = theme !== Theme.LIGHT;
 
-        // Configure Mermaid to match the pixel art aesthetic
         mermaid.initialize({
           startOnLoad: false,
           theme: 'base',
@@ -53,7 +60,7 @@ export const MermaidBlock: React.FC<MermaidBlockProps> = ({ code, theme }) => {
           themeVariables: {
               darkMode: isDark,
               background: colors.bg,
-              primaryColor: colors.secondary, // Nodes
+              primaryColor: colors.secondary,
               primaryTextColor: colors.text,
               primaryBorderColor: colors.border,
               lineColor: isDark ? colors.accent : colors.text,
@@ -70,17 +77,12 @@ export const MermaidBlock: React.FC<MermaidBlockProps> = ({ code, theme }) => {
           }
         });
 
-        // Unique ID for each render to prevent DOM conflicts
         const id = `mermaid-${Math.random().toString(36).substr(2, 9)}`;
-        
-        // Attempt to render
         const { svg } = await mermaid.render(id, code);
         setSvg(svg);
       } catch (err) {
         console.error("Mermaid Render Error:", err);
         setError("Failed to render diagram. Syntax might be incorrect.");
-        // Mermaid keeps error elements in DOM, sometimes we need to cleanup, 
-        // but react unmount handles most.
       } finally {
         setLoading(false);
       }
@@ -94,7 +96,6 @@ export const MermaidBlock: React.FC<MermaidBlockProps> = ({ code, theme }) => {
           <div className="border-2 border-red-500 bg-red-100/10 p-2 text-xs font-mono text-red-500 flex items-center gap-2">
               <AlertTriangle size={16} />
               <span>{error}</span>
-              {/* Show raw code on error so user can debug */}
               <pre className="ml-2 opacity-50 text-[10px]">{code.substring(0, 50)}...</pre>
           </div>
       );

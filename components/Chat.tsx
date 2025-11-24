@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Theme, Message, LLMModel, LLMProvider, Language } from '../types';
 import { PixelButton, PixelBadge } from './PixelUI';
@@ -59,11 +58,11 @@ const MarkdownRenderer: React.FC<{ text: string; theme: Theme }> = React.memo(({
         rehypePlugins={[rehypeKatex]}
         components={{
             a: ({node, ...props}) => <a {...props} target="_blank" rel="noopener noreferrer" />,
-            code: ({node, className, children, ...props}) => {
+            code: ({node, inline, className, children, ...props}: any) => {
                 const match = /language-(\w+)/.exec(className || '');
                 const isMermaid = match && match[1] === 'mermaid';
                 
-                if (isMermaid) {
+                if (!inline && isMermaid) {
                     return <MermaidBlock code={String(children).replace(/\n$/, '')} theme={theme} />;
                 }
                 
@@ -112,14 +111,11 @@ const ThinkingBlock: React.FC<{ content: string; theme: Theme; language: Languag
     );
 });
 
-// Helper to split content by <thinking> tags
 const parseMessageContent = (content: string, theme: Theme, language: Language) => {
-    // Split by <thinking> tag.
     const parts = content.split('<thinking>');
     
     return parts.map((part, index) => {
         if (index === 0) {
-            // Text before any thinking tag
             return (
               <div key={`text-${index}`} className="markdown-body">
                   <MarkdownRenderer text={part} theme={theme} />
@@ -130,9 +126,8 @@ const parseMessageContent = (content: string, theme: Theme, language: Language) 
         const closingIndex = part.indexOf('</thinking>');
         
         if (closingIndex !== -1) {
-            // Closed thought
             const thought = part.substring(0, closingIndex);
-            const rest = part.substring(closingIndex + 11); // length of </thinking>
+            const rest = part.substring(closingIndex + 11); 
             
             return (
                 <React.Fragment key={`group-${index}`}>
@@ -143,7 +138,6 @@ const parseMessageContent = (content: string, theme: Theme, language: Language) 
                 </React.Fragment>
             );
         } else {
-            // Open thought (Streaming)
             return (
                 <ThinkingBlock key={`thinking-${index}`} content={part} theme={theme} language={language} />
             );
@@ -160,7 +154,6 @@ interface MessageBubbleProps {
     isLast: boolean;
 }
 
-// Memoized Message Bubble to isolate updates
 const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ msg, theme, language, styles, isStreaming, isLast }) => {
     return (
         <div className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -186,13 +179,11 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ msg, theme, la
               {msg.content ? (
                   parseMessageContent(msg.content, theme, language)
               ) : (
-                  // Loading state
                   <div className="flex items-center gap-2 py-2 opacity-70">
                       <Loader2 size={16} className="animate-spin" />
                       <span className="font-pixel-verse animate-pulse">Thinking...</span>
                   </div>
               )}
-              {/* Cursor effect */}
               {isStreaming && isLast && msg.content && (
                   <span className="inline-block w-2 h-4 bg-current ml-1 animate-cursor align-middle"></span>
               )}
@@ -235,7 +226,6 @@ export const Chat: React.FC<ChatProps> = ({
       setShowLangMenu(false);
   };
 
-  // Memoize displayed messages to avoid recalc on input change
   const displayMessages = useMemo(() => {
     if (!searchQuery.trim()) return messages;
     return messages.filter(msg => 

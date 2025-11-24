@@ -97,7 +97,8 @@ const App: React.FC = () => {
   }, [activeSessionId]);
 
   const refreshSessions = async () => {
-      const apiSessions = await ApiClient.getActiveSessions();
+      // Pass 0 to get all sessions without time limit
+      const apiSessions = await ApiClient.getActiveSessions(0);
       // Map API sessions to ChatSession type
       const mappedSessions: ChatSession[] = apiSessions.map(s => ({
           id: s.sessionId,

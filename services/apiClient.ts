@@ -250,7 +250,7 @@ export const ApiClient = {
   // Sessions
   getActiveSessions: async (cutoffTime?: number): Promise<ApiSession[]> => {
     try {
-      const params = cutoffTime ? `?cutoffTime=${cutoffTime}` : '';
+      const params = cutoffTime !== undefined ? `?cutoffTime=${cutoffTime}` : '';
       const res = await fetchWithTimeout(`${API_BASE_URL}/v1/chat/sessions/active${params}`, { headers: getHeaders() });
       if (!res.ok) return [];
       const data = await res.json();
