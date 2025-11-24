@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useRef } from 'react';
 // We use the global variable from the script tag
 declare const mermaid: any;
@@ -16,6 +17,12 @@ export const MermaidBlock: React.FC<MermaidBlockProps> = ({ code, theme }) => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
   
   // Extract hex colors from current theme styles
   const getThemeColors = () => {
@@ -77,14 +84,32 @@ export const MermaidBlock: React.FC<MermaidBlockProps> = ({ code, theme }) => {
           }
         });
 
+        // SANITIZATION: Fix common LLM output issues with Chinese punctuation
+        // Using explicit unicode escapes to avoid file encoding/copy-paste issues
+        const cleanCode = code
+            .replace(/\uFF1A/g, ':') // Full-width colon (：)
+            .replace(/\uFF0C/g, ',') // Full-width comma (，)
+            .replace(/\uFF1B/g, ';') // Full-width semicolon (；)
+            .replace(/\uFF08/g, '(') // Full-width (
+            .replace(/\uFF09/g, ')') // Full-width )
+            .replace(/\u00A0/g, ' ') // Non-breaking space
+            .replace(/\u3000/g, ' '); // Ideographic space
+
         const id = `mermaid-${Math.random().toString(36).substr(2, 9)}`;
-        const { svg } = await mermaid.render(id, code);
-        setSvg(svg);
+        const { svg } = await mermaid.render(id, cleanCode);
+        
+        if (mountedRef.current) {
+            setSvg(svg);
+        }
       } catch (err) {
-        console.error("Mermaid Render Error:", err);
-        setError("Failed to render diagram. Syntax might be incorrect.");
+        console.warn("Mermaid Render Error:", err);
+        if (mountedRef.current) {
+            setError("Failed to render diagram. Syntax might be incorrect.");
+        }
       } finally {
-        setLoading(false);
+        if (mountedRef.current) {
+            setLoading(false);
+        }
       }
     };
 
@@ -93,10 +118,16 @@ export const MermaidBlock: React.FC<MermaidBlockProps> = ({ code, theme }) => {
 
   if (error) {
       return (
-          <div className="border-2 border-red-500 bg-red-100/10 p-2 text-xs font-mono text-red-500 flex items-center gap-2">
-              <AlertTriangle size={16} />
-              <span>{error}</span>
-              <pre className="ml-2 opacity-50 text-[10px]">{code.substring(0, 50)}...</pre>
+          <div className="border-2 border-red-500 bg-red-100/10 p-2 text-xs font-mono text-red-500 flex flex-col gap-2">
+              <div className="flex items-center gap-2 font-bold">
+                  <AlertTriangle size={16} /> Rendering Failed
+              </div>
+              <div className="opacity-80">
+                  The model generated invalid Mermaid syntax (likely special characters).
+              </div>
+              <pre className="p-2 bg-black/20 overflow-x-auto text-[10px] select-all whitespace-pre-wrap">
+                  {code}
+              </pre>
           </div>
       );
   }
@@ -107,8 +138,8 @@ export const MermaidBlock: React.FC<MermaidBlockProps> = ({ code, theme }) => {
         ${theme === Theme.LIGHT ? 'bg-white/50' : 'bg-black/20'}
     `}>
         {loading && (
-            <div className="absolute inset-0 flex items-center justify-center bg-inherit z-10">
-                <Loader2 className="animate-spin" />
+            <div className="absolute inset-0 flex items-center justify-center bg-inherit z-10 opacity-70">
+                <Loader2 className="animate-spin text-current" />
             </div>
         )}
         <div 
