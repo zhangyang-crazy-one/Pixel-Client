@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Theme, Message, LLMModel, LLMProvider, Language } from '../types';
 import { PixelButton, PixelBadge } from './PixelUI';
@@ -170,11 +171,15 @@ interface MessageBubbleProps {
 }
 
 const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ msg, theme, language, styles, isStreaming, isLast }) => {
+    // Check if message has thinking content to allow wider bubble
+    const hasThinking = useMemo(() => msg.content?.includes('<thinking>'), [msg.content]);
+
     return (
         <div className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
           <div 
             className={`
-              max-w-[85%] md:max-w-[75%] p-4 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]
+              p-4 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]
+              ${hasThinking ? 'max-w-[98%] md:max-w-[95%]' : 'max-w-[85%] md:max-w-[75%]'}
               ${msg.role === 'user' ? styles.primary + ' text-white' : styles.secondary + ' ' + styles.text}
             `}
           >
@@ -234,13 +239,28 @@ export const Chat: React.FC<ChatProps> = ({
   const isStreaming = externalIsStreaming || localIsStreaming;
 
   const scrollRef = useRef<HTMLDivElement>(null);
+  const themeRef = useRef<HTMLDivElement>(null);
+  const langRef = useRef<HTMLDivElement>(null);
+  
   const styles = THEME_STYLES[theme];
   const t = TRANSLATIONS[language];
 
-  const closeMenus = () => {
-      setShowThemeMenu(false);
-      setShowLangMenu(false);
-  };
+  // Handle click outside to close menus
+  useEffect(() => {
+      const handleClickOutside = (event: MouseEvent) => {
+          if (showThemeMenu && themeRef.current && !themeRef.current.contains(event.target as Node)) {
+              setShowThemeMenu(false);
+          }
+          if (showLangMenu && langRef.current && !langRef.current.contains(event.target as Node)) {
+              setShowLangMenu(false);
+          }
+      };
+
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+          document.removeEventListener('mousedown', handleClickOutside);
+      };
+  }, [showThemeMenu, showLangMenu]);
 
   const displayMessages = useMemo(() => {
     if (!searchQuery.trim()) return messages;
@@ -320,10 +340,7 @@ export const Chat: React.FC<ChatProps> = ({
 
   return (
     <div className="flex flex-col h-full relative z-10">
-      {(showThemeMenu || showLangMenu) && (
-          <div className="fixed inset-0 z-[60] cursor-default" onClick={closeMenus}></div>
-      )}
-
+      
       <div className="flex-1 overflow-y-auto p-4 space-y-6 relative z-10" ref={scrollRef}>
         {messages.length === 0 ? (
            <div className={`flex flex-col items-center justify-center h-full opacity-50 select-none ${styles.text}`}>
@@ -370,7 +387,7 @@ export const Chat: React.FC<ChatProps> = ({
           
           <div className="flex justify-between mt-2 items-center relative z-50">
              <div className="flex gap-2 items-center">
-                <div className="relative">
+                <div className="relative" ref={themeRef}>
                     {showThemeMenu && (
                         <div className={`
                             absolute bottom-full left-0 mb-2 w-40 border-2 border-black 
@@ -400,7 +417,7 @@ export const Chat: React.FC<ChatProps> = ({
                     </PixelButton>
                 </div>
 
-                <div className="relative">
+                <div className="relative" ref={langRef}>
                     {showLangMenu && (
                         <div className={`
                             absolute bottom-full left-0 mb-2 w-32 border-2 border-black 
