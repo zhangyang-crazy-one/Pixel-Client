@@ -113,7 +113,12 @@ export const streamChatResponse = async (
                               content = nested.content; 
                           }
                       } catch (e) {
-                          // Not valid JSON, treat as normal text content
+                          // Not valid JSON. 
+                          // SAFETY: If it starts with { but fails parsing, it might be a split JSON chunk or raw JSON that wasn't meant to be seen.
+                          // To avoid showing "{"reasoning_content":..." to the user, we can aggressively suppress it if it looks like specific schema
+                          if (content.includes('"reasoning_content"')) {
+                              content = null; // Suppress likely raw JSON
+                          }
                       }
                   }
 
@@ -221,7 +226,27 @@ export const fetchMascotComment = async (
 
                 try {
                     const json = JSON.parse(dataStr);
-                    const content = json.choices?.[0]?.delta?.content;
+                    let content = json.choices?.[0]?.delta?.content;
+                    
+                    // --- NESTED JSON FIX FOR MASCOT ---
+                    if (typeof content === 'string' && content.trim().startsWith('{')) {
+                        try {
+                            const nested = JSON.parse(content);
+                            // We only care about the actual content for the mascot, not the reasoning
+                            if (nested.content !== undefined) {
+                                content = nested.content;
+                            } else if (nested.reasoning_content) {
+                                // If it's pure reasoning chunk, ignore it for mascot speech
+                                content = '';
+                            }
+                        } catch(e) {
+                            // If parsing fails but it looks like JSON, ignore it to prevent raw JSON speech
+                            if (content.includes('"reasoning_content"') || content.includes('"content"')) {
+                                content = '';
+                            }
+                        }
+                    }
+
                     if (content) fullText += content;
                 } catch (e) {
                     // Ignore parse errors for mascot stream
