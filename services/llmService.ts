@@ -1,3 +1,4 @@
+
 import { Message, LLMModel, LLMProvider } from '../types';
 import { API_BASE_URL, API_KEY } from '../constants';
 
@@ -29,7 +30,7 @@ export const streamChatResponse = async (
       user_id: 'pixel-user',
       selfThinking: deepThinkingEnabled ? {
           enabled: true,
-          includeThoughtsInResponse: true,
+          includeThoughtsInResponse: true, // Server should return thoughts
           enableStreamThoughts: true
       } : undefined
   };
@@ -57,6 +58,7 @@ export const streamChatResponse = async (
       const decoder = new TextDecoder();
       let buffer = '';
       let firstChunkProcessed = false;
+      let isThinking = false; // State to track if we are currently outputting thought tags
 
       while (true) {
           const { done, value } = await reader.read();
@@ -75,7 +77,12 @@ export const streamChatResponse = async (
               
               const dataStr = trimmed.substring(6); // Remove "data: "
               
-              if (dataStr === '[DONE]') return;
+              if (dataStr === '[DONE]') {
+                  if (isThinking) {
+                      onChunk('</thinking>'); // Close tag if stream ends while thinking
+                  }
+                  return;
+              }
 
               try {
                   const json = JSON.parse(dataStr);
@@ -86,14 +93,43 @@ export const streamChatResponse = async (
                       firstChunkProcessed = true;
                   }
 
-                  const content = json.choices?.[0]?.delta?.content;
+                  // Handle various API formats:
+                  // 1. Root level (custom): { "reasoning_content": "...", "content": "..." }
+                  // 2. OpenAI/DeepSeek standard: { choices: [{ delta: { "reasoning_content": "...", "content": "..." } }] }
+                  
+                  const delta = json.choices?.[0]?.delta || json;
+                  const reasoning = delta.reasoning_content;
+                  const content = delta.content;
+
+                  // Handle Reasoning Content
+                  if (reasoning) {
+                      if (!isThinking) {
+                          onChunk('<thinking>');
+                          isThinking = true;
+                      }
+                      onChunk(reasoning);
+                  }
+
+                  // Handle Normal Content
                   if (content) {
+                      if (isThinking) {
+                          onChunk('</thinking>');
+                          isThinking = false;
+                      }
                       onChunk(content);
                   }
+
               } catch (e) {
-                  console.warn('Error parsing stream chunk', e);
+                  // If it's not JSON, it might be raw text (rare in SSE but possible)
+                  // or just a malformed chunk. Ignore or log.
+                  // console.warn('Error parsing stream chunk', e);
               }
           }
+      }
+      
+      // Cleanup
+      if (isThinking) {
+          onChunk('</thinking>');
       }
 
   } catch (error) {
