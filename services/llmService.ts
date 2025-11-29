@@ -93,13 +93,29 @@ export const streamChatResponse = async (
                       firstChunkProcessed = true;
                   }
 
-                  // Handle various API formats:
-                  // 1. Root level (custom): { "reasoning_content": "...", "content": "..." }
-                  // 2. OpenAI/DeepSeek standard: { choices: [{ delta: { "reasoning_content": "...", "content": "..." } }] }
-                  
                   const delta = json.choices?.[0]?.delta || json;
-                  const reasoning = delta.reasoning_content;
-                  const content = delta.content;
+                  
+                  // --- CRITICAL FIX FOR NESTED JSON STREAMING ---
+                  // The backend might send the delta as: { content: "{\"reasoning_content\":\"...\"}" }
+                  // We need to parse this stringified JSON to extract the actual fields.
+                  
+                  let reasoning = delta.reasoning_content;
+                  let content = delta.content;
+
+                  if (typeof content === 'string' && content.trim().startsWith('{')) {
+                      try {
+                          const nested = JSON.parse(content);
+                          // Check if the parsed object has the expected fields
+                          if (nested.reasoning_content !== undefined || nested.content !== undefined) {
+                              reasoning = nested.reasoning_content;
+                              // If 'content' in nested JSON is null/undefined, use that. 
+                              // Otherwise we would output the raw JSON string as content!
+                              content = nested.content; 
+                          }
+                      } catch (e) {
+                          // Not valid JSON, treat as normal text content
+                      }
+                  }
 
                   // Handle Reasoning Content
                   if (reasoning) {
