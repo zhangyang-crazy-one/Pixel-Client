@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Theme, Message, LLMModel, LLMProvider, Language } from '../types';
 import { PixelButton, PixelBadge } from './PixelUI';
@@ -424,7 +425,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ msg, theme, la
           <div 
             className={`
               p-4 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]
-              ${hasThinking ? 'md:max-w-[95%]' : 'md:max-w-[60%]'}
+              ${hasThinking ? 'max-w-[98%] md:max-w-[95%]' : 'max-w-[90%] md:max-w-[75%]'}
               ${msg.role === 'user' ? styles.primary + ' text-white' : styles.secondary + ' ' + styles.text}
             `}
           >

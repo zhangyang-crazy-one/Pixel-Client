@@ -420,7 +420,7 @@ const App: React.FC = () => {
                     <option key={m.id} value={m.id}>{m.name}</option>
                 ))}
             </PixelSelect>
-            <PixelButton theme={theme} variant="secondary" className="w-full text-xs" onClick={() => setIsModelManagerOpen(true)}>
+            <PixelButton theme={theme} variant="primary" className="w-full text-xs" onClick={() => setIsModelManagerOpen(true)}>
                 <Settings size={12} /> {t.configLlms}
             </PixelButton>
         </div>
@@ -431,8 +431,8 @@ const App: React.FC = () => {
                 <span className="text-xs">- {t.history} -</span>
                 <button onClick={refreshSessions} title="Refresh"><RefreshCcw size={12}/></button>
             </div>
-            <PixelButton theme={theme} variant="secondary" className="w-full text-xs mb-2" onClick={createNewSession}>
-                + NEW CHAT
+            <PixelButton theme={theme} variant="primary" className="w-full text-xs mb-2" onClick={createNewSession}>
+                + {t.newChat}
             </PixelButton>
             
             {sessions.map(session => (

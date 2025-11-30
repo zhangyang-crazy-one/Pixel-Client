@@ -1,6 +1,7 @@
 
 
 
+
 import { LLMProvider, LLMModel, Theme, AceConfig, Language } from './types';
 
 // ApexBridge Configuration
@@ -136,6 +137,7 @@ export const TRANSLATIONS = {
     noChatModels: "No Chat Models Available",
     configLlms: "CONFIG",
     history: "HISTORY",
+    newChat: "NEW CHAT",
     noModelSelected: "NO MODEL SELECTED",
     online: "ONLINE",
     searchPlaceholder: "Search...",
@@ -212,6 +214,7 @@ export const TRANSLATIONS = {
     noChatModels: "无可用聊天模型",
     configLlms: "配置",
     history: "历史记录",
+    newChat: "新建会话",
     noModelSelected: "未选择模型",
     online: "在线",
     searchPlaceholder: "搜索...",
@@ -288,6 +291,7 @@ export const TRANSLATIONS = {
     noChatModels: "利用可能なモデルなし",
     configLlms: "設定",
     history: "履歴",
+    newChat: "新規チャット",
     noModelSelected: "モデル未選択",
     online: "オンライン",
     searchPlaceholder: "検索...",
