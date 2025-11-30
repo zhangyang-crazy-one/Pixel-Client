@@ -1,14 +1,14 @@
-
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Theme, Message, LLMModel, LLMProvider, Language } from '../types';
 import { PixelButton, PixelBadge } from './PixelUI';
 import { streamChatResponse } from '../services/llmService';
 import { THEME_STYLES, TRANSLATIONS } from '../constants';
-import { Send, Copy, Check, Moon, Sun, Star, Cpu, Globe, Palette, Loader2, Brain, ChevronDown, ChevronRight, BrainCircuit } from 'lucide-react';
+import { Send, Copy, Check, Moon, Sun, Star, Cpu, Globe, Palette, Loader2, Brain, ChevronDown, ChevronRight, BrainCircuit, Play, Pause, Maximize, FileCode, Box } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
+import rehypeRaw from 'rehype-raw';
 import { MermaidBlock } from './MermaidBlock';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
@@ -54,60 +54,200 @@ const CopyButton: React.FC<{ content: string }> = ({ content }) => {
   );
 };
 
-// Memoized Markdown Renderer to prevent re-parsing on every render
-const MarkdownRenderer: React.FC<{ text: string; theme: Theme }> = React.memo(({ text, theme }) => (
-    <ReactMarkdown
-        remarkPlugins={[remarkGfm, remarkMath]}
-        rehypePlugins={[rehypeKatex]}
-        components={{
-            a: ({node, ...props}) => <a {...props} target="_blank" rel="noopener noreferrer" />,
-            code: ({node, inline, className, children, ...props}: any) => {
-                const match = /language-(\w+)/.exec(className || '');
-                const lang = match ? match[1] : '';
-                const isMermaid = lang === 'mermaid';
-                
-                if (!inline && isMermaid) {
-                    return <MermaidBlock code={String(children).replace(/\n$/, '')} theme={theme} />;
-                }
+// --- MEDIA COMPONENTS ---
 
-                if (!inline && match) {
+const MediaFrame: React.FC<{ theme: Theme; children: React.ReactNode; label: string; icon: React.ReactNode }> = ({ theme, children, label, icon }) => {
+    const isLight = theme === Theme.LIGHT;
+    return (
+        <div className={`my-4 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.5)] overflow-hidden ${isLight ? 'bg-gray-100' : 'bg-gray-900'}`}>
+            <div className={`flex items-center gap-2 px-3 py-1 text-xs font-bold border-b-2 border-black ${isLight ? 'bg-gray-200 text-gray-700' : 'bg-gray-800 text-gray-300'}`}>
+                {icon}
+                <span className="uppercase tracking-wider">{label}</span>
+            </div>
+            <div className="relative">
+                {children}
+            </div>
+        </div>
+    );
+};
+
+const HtmlPreviewBlock: React.FC<{ code: string; theme: Theme }> = ({ code, theme }) => {
+    const [showPreview, setShowPreview] = useState(false);
+    
+    return (
+        <div className="my-4 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.5)]">
+             <div className="flex justify-between items-center bg-[#1e1e1e] text-gray-400 px-2 py-1 text-xs border-b-2 border-black font-bold font-mono">
+                <div className="flex items-center gap-2">
+                    <div className="flex gap-2">
+                        <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                        <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
+                        <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                    </div>
+                    <span className="uppercase text-blue-400">HTML</span>
+                </div>
+                <button 
+                    onClick={() => setShowPreview(!showPreview)} 
+                    className={`
+                        flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider
+                        transition-colors
+                        ${showPreview ? 'bg-green-600 text-white' : 'bg-gray-700 hover:bg-gray-600 text-white'}
+                    `}
+                >
+                    {showPreview ? <FileCode size={12} /> : <Maximize size={12} />}
+                    {showPreview ? "VIEW CODE" : "RUN PREVIEW"}
+                </button>
+            </div>
+            
+            {showPreview ? (
+                 <div className="bg-white w-full h-[400px] relative">
+                     <iframe 
+                        srcDoc={code}
+                        className="w-full h-full border-none"
+                        sandbox="allow-scripts"
+                        title="HTML Preview"
+                     />
+                 </div>
+            ) : (
+                <SyntaxHighlighter
+                    style={vscDarkPlus}
+                    language="html"
+                    PreTag="div"
+                    customStyle={{ 
+                        margin: 0, 
+                        borderRadius: 0, 
+                        fontFamily: '"VT323", monospace', 
+                        fontSize: '16px', 
+                        lineHeight: '1.4',
+                        background: '#1e1e1e' 
+                    }}
+                >
+                    {code}
+                </SyntaxHighlighter>
+            )}
+        </div>
+    );
+};
+
+// Memoized Markdown Renderer to prevent re-parsing on every render
+const MarkdownRenderer: React.FC<{ text: string; theme: Theme }> = React.memo(({ text, theme }) => {
+    
+    // Helper to detect media types from URL
+    const getMediaType = (url: string) => {
+        const cleanUrl = url.split('?')[0].toLowerCase();
+        if (cleanUrl.match(/\.(mp4|webm|mov|mkv)$/)) return 'video';
+        if (cleanUrl.match(/\.(mp3|wav|ogg|m4a)$/)) return 'audio';
+        if (cleanUrl.match(/\.(glb|gltf)$/)) return 'model';
+        return 'link';
+    };
+
+    return (
+        <ReactMarkdown
+            remarkPlugins={[remarkGfm, remarkMath]}
+            rehypePlugins={[rehypeKatex, rehypeRaw]}
+            components={{
+                a: ({node, href, children, ...props}) => {
+                    const url = href || '';
+                    const type = getMediaType(url);
+                    
+                    if (type === 'video') {
+                        return (
+                            <MediaFrame theme={theme} label="Video Feed" icon={<Play size={14} />}>
+                                <video controls className="w-full max-h-[400px]" src={url} />
+                            </MediaFrame>
+                        );
+                    }
+                    if (type === 'audio') {
+                        return (
+                            <MediaFrame theme={theme} label="Audio Log" icon={<Play size={14} />}>
+                                <audio controls className="w-full" src={url} />
+                            </MediaFrame>
+                        );
+                    }
+                    if (type === 'model') {
+                        // Cast to any to avoid IntrinsicElements error with model-viewer
+                        const ModelViewerComponent = 'model-viewer' as any;
+                        return (
+                            <MediaFrame theme={theme} label="3D Asset" icon={<Box size={14} />}>
+                                <ModelViewerComponent 
+                                    src={url} 
+                                    camera-controls 
+                                    auto-rotate 
+                                    shadow-intensity="1"
+                                    style={{ width: '100%', height: '300px', backgroundColor: theme === Theme.LIGHT ? '#f0f0f0' : '#1a1a1a' }} 
+                                />
+                            </MediaFrame>
+                        );
+                    }
+                    
+                    return <a href={href} className="text-blue-500 hover:text-blue-400 underline break-all" target="_blank" rel="noopener noreferrer" {...props}>{children}</a>;
+                },
+                img: ({node, src, alt, ...props}) => {
                     return (
-                        <div className="my-4 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.5)]">
-                            <div className="flex justify-between items-center bg-[#1e1e1e] text-gray-400 px-2 py-1 text-xs border-b-2 border-black font-bold font-mono">
-                                <div className="flex gap-2">
-                                    <div className="w-2 h-2 rounded-full bg-red-500"></div>
-                                    <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
-                                    <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                                </div>
-                                <span className="uppercase">{lang}</span>
-                            </div>
-                            <SyntaxHighlighter
-                                style={vscDarkPlus}
-                                language={lang}
-                                PreTag="div"
-                                customStyle={{ 
-                                    margin: 0, 
-                                    borderRadius: 0, 
-                                    fontFamily: '"VT323", monospace', 
-                                    fontSize: '16px', 
-                                    lineHeight: '1.4',
-                                    background: '#1e1e1e' 
-                                }}
-                                {...props}
-                            >
-                                {String(children).replace(/\n$/, '')}
-                            </SyntaxHighlighter>
+                        <div className="my-2 inline-block relative group">
+                            <div className="absolute inset-0 border-2 border-black pointer-events-none z-10"></div>
+                            <img 
+                                src={src} 
+                                alt={alt} 
+                                className="max-w-full h-auto shadow-[4px_4px_0px_0px_rgba(0,0,0,0.5)] bg-gray-200 image-pixelated" 
+                                loading="lazy"
+                                {...props} 
+                            />
+                            {alt && <div className="absolute bottom-0 left-0 bg-black/70 text-white text-[10px] px-1 py-0.5 max-w-full truncate">{alt}</div>}
                         </div>
                     );
+                },
+                code: ({node, inline, className, children, ...props}: any) => {
+                    const match = /language-(\w+)/.exec(className || '');
+                    const lang = match ? match[1] : '';
+                    const isMermaid = lang === 'mermaid';
+                    
+                    if (!inline && isMermaid) {
+                        return <MermaidBlock code={String(children).replace(/\n$/, '')} theme={theme} />;
+                    }
+
+                    if (!inline && lang === 'html') {
+                        return <HtmlPreviewBlock code={String(children).replace(/\n$/, '')} theme={theme} />;
+                    }
+
+                    if (!inline && match) {
+                        return (
+                            <div className="my-4 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.5)]">
+                                <div className="flex justify-between items-center bg-[#1e1e1e] text-gray-400 px-2 py-1 text-xs border-b-2 border-black font-bold font-mono">
+                                    <div className="flex gap-2">
+                                        <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                                        <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
+                                        <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                                    </div>
+                                    <span className="uppercase">{lang}</span>
+                                </div>
+                                <SyntaxHighlighter
+                                    style={vscDarkPlus}
+                                    language={lang}
+                                    PreTag="div"
+                                    customStyle={{ 
+                                        margin: 0, 
+                                        borderRadius: 0, 
+                                        fontFamily: '"VT323", monospace', 
+                                        fontSize: '16px', 
+                                        lineHeight: '1.4',
+                                        background: '#1e1e1e' 
+                                    }}
+                                    {...props}
+                                >
+                                    {String(children).replace(/\n$/, '')}
+                                </SyntaxHighlighter>
+                            </div>
+                        );
+                    }
+                    
+                    return <code className={className} {...props}>{children}</code>;
                 }
-                
-                return <code className={className} {...props}>{children}</code>;
-            }
-        }}
-    >
-        {text}
-    </ReactMarkdown>
-));
+            }}
+        >
+            {text}
+        </ReactMarkdown>
+    );
+});
 
 const ThinkingBlock: React.FC<{ content: string; theme: Theme; language: Language }> = React.memo(({ content, theme, language }) => {
     const [isOpen, setIsOpen] = useState(false);

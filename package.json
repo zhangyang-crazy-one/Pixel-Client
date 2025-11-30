@@ -16,6 +16,7 @@
     "remark-gfm": "3.0.1",
     "remark-math": "5.1.1",
     "rehype-katex": "6.0.3",
+    "rehype-raw": "7.0.0",
     "react-syntax-highlighter": "^16.1.0"
   },
   "devDependencies": {
