@@ -1,5 +1,4 @@
 
-
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Theme, Message, LLMModel, LLMProvider, Language } from '../types';
 import { PixelButton, PixelBadge } from './PixelUI';
@@ -73,8 +72,14 @@ const MediaFrame: React.FC<{ theme: Theme; children: React.ReactNode; label: str
     );
 };
 
-const HtmlPreviewBlock: React.FC<{ code: string; theme: Theme }> = ({ code, theme }) => {
-    const [showPreview, setShowPreview] = useState(false);
+interface HtmlPreviewBlockProps {
+    code: string;
+    theme: Theme;
+    defaultPreview?: boolean;
+}
+
+const HtmlPreviewBlock: React.FC<HtmlPreviewBlockProps> = ({ code, theme, defaultPreview = false }) => {
+    const [showPreview, setShowPreview] = useState(defaultPreview);
     
     return (
         <div className="my-4 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.5)]">
@@ -85,7 +90,7 @@ const HtmlPreviewBlock: React.FC<{ code: string; theme: Theme }> = ({ code, them
                         <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
                         <div className="w-2 h-2 rounded-full bg-green-500"></div>
                     </div>
-                    <span className="uppercase text-blue-400">HTML</span>
+                    <span className="uppercase text-blue-400">HTML {defaultPreview ? 'DOCUMENT' : 'SNIPPET'}</span>
                 </div>
                 <button 
                     onClick={() => setShowPreview(!showPreview)} 
@@ -101,30 +106,32 @@ const HtmlPreviewBlock: React.FC<{ code: string; theme: Theme }> = ({ code, them
             </div>
             
             {showPreview ? (
-                 <div className="bg-white w-full h-[400px] relative">
+                 <div className="bg-white w-full h-[500px] relative resize-y overflow-auto">
                      <iframe 
                         srcDoc={code}
                         className="w-full h-full border-none"
-                        sandbox="allow-scripts"
+                        sandbox="allow-scripts allow-forms allow-modals allow-popups allow-presentation allow-same-origin"
                         title="HTML Preview"
                      />
                  </div>
             ) : (
-                <SyntaxHighlighter
-                    style={vscDarkPlus}
-                    language="html"
-                    PreTag="div"
-                    customStyle={{ 
-                        margin: 0, 
-                        borderRadius: 0, 
-                        fontFamily: '"VT323", monospace', 
-                        fontSize: '16px', 
-                        lineHeight: '1.4',
-                        background: '#1e1e1e' 
-                    }}
-                >
-                    {code}
-                </SyntaxHighlighter>
+                <div className="max-h-[500px] overflow-auto">
+                    <SyntaxHighlighter
+                        style={vscDarkPlus}
+                        language="html"
+                        PreTag="div"
+                        customStyle={{ 
+                            margin: 0, 
+                            borderRadius: 0, 
+                            fontFamily: '"VT323", monospace', 
+                            fontSize: '16px', 
+                            lineHeight: '1.4',
+                            background: '#1e1e1e' 
+                        }}
+                    >
+                        {code}
+                    </SyntaxHighlighter>
+                </div>
             )}
         </div>
     );
@@ -155,6 +162,11 @@ const MarkdownRenderer: React.FC<{ text: string; theme: Theme }> = React.memo(({
                 link: () => null,
                 meta: () => null,
                 head: () => null,
+                iframe: () => null, // Block iframes in markdown stream
+                object: () => null,
+                embed: () => null,
+                form: () => null,
+                
                 html: ({children}) => <>{children}</>, 
                 body: ({children}) => <>{children}</>,
 
@@ -420,12 +432,19 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ msg, theme, la
     // Check if message has thinking content to allow wider bubble
     const hasThinking = useMemo(() => msg.content?.includes('<thinking>'), [msg.content]);
 
+    // Detect if content is primarily an HTML document (for Safe Pure Rendering)
+    const isHtml = useMemo(() => {
+        const trimmed = msg.content.trim();
+        // Check for doctype or html tag at the start (fuzzy match to allow some leading text or whitespace)
+        return /^\s*<!DOCTYPE html>/i.test(trimmed) || /^\s*<html/i.test(trimmed);
+    }, [msg.content]);
+
     return (
         <div className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
           <div 
             className={`
               p-4 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]
-              ${hasThinking ? 'max-w-[98%] md:max-w-[95%]' : 'max-w-[90%] md:max-w-[75%]'}
+              ${hasThinking || isHtml ? 'max-w-[98%] md:max-w-[95%]' : 'max-w-[90%] md:max-w-[75%]'}
               ${msg.role === 'user' ? styles.primary + ' text-white' : styles.secondary + ' ' + styles.text}
             `}
           >
@@ -443,7 +462,11 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ msg, theme, la
             </div>
             <div className="leading-relaxed font-chat text-sm">
               {msg.content ? (
-                  parseMessageContent(msg.content, theme, language)
+                  isHtml ? (
+                      <HtmlPreviewBlock code={msg.content} theme={theme} defaultPreview={true} />
+                  ) : (
+                      parseMessageContent(msg.content, theme, language)
+                  )
               ) : (
                   <div className="flex items-center gap-2 py-2 opacity-70">
                       <Loader2 size={16} className="animate-spin" />
