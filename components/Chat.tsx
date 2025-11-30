@@ -10,6 +10,8 @@ import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import { MermaidBlock } from './MermaidBlock';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 interface ChatProps {
   theme: Theme;
@@ -61,10 +63,42 @@ const MarkdownRenderer: React.FC<{ text: string; theme: Theme }> = React.memo(({
             a: ({node, ...props}) => <a {...props} target="_blank" rel="noopener noreferrer" />,
             code: ({node, inline, className, children, ...props}: any) => {
                 const match = /language-(\w+)/.exec(className || '');
-                const isMermaid = match && match[1] === 'mermaid';
+                const lang = match ? match[1] : '';
+                const isMermaid = lang === 'mermaid';
                 
                 if (!inline && isMermaid) {
                     return <MermaidBlock code={String(children).replace(/\n$/, '')} theme={theme} />;
+                }
+
+                if (!inline && match) {
+                    return (
+                        <div className="my-4 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.5)]">
+                            <div className="flex justify-between items-center bg-[#1e1e1e] text-gray-400 px-2 py-1 text-xs border-b-2 border-black font-bold font-mono">
+                                <div className="flex gap-2">
+                                    <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                                    <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
+                                    <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                                </div>
+                                <span className="uppercase">{lang}</span>
+                            </div>
+                            <SyntaxHighlighter
+                                style={vscDarkPlus}
+                                language={lang}
+                                PreTag="div"
+                                customStyle={{ 
+                                    margin: 0, 
+                                    borderRadius: 0, 
+                                    fontFamily: '"VT323", monospace', 
+                                    fontSize: '16px', 
+                                    lineHeight: '1.4',
+                                    background: '#1e1e1e' 
+                                }}
+                                {...props}
+                            >
+                                {String(children).replace(/\n$/, '')}
+                            </SyntaxHighlighter>
+                        </div>
+                    );
                 }
                 
                 return <code className={className} {...props}>{children}</code>;
@@ -179,7 +213,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ msg, theme, la
           <div 
             className={`
               p-4 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]
-              ${hasThinking ? 'max-w-[98%] md:max-w-[95%]' : 'max-w-[85%] md:max-w-[75%]'}
+              ${hasThinking ? 'md:max-w-[95%]' : 'md:max-w-[60%]'}
               ${msg.role === 'user' ? styles.primary + ' text-white' : styles.secondary + ' ' + styles.text}
             `}
           >
@@ -445,19 +479,25 @@ export const Chat: React.FC<ChatProps> = ({
              </div>
              
              <div className="flex gap-2">
-                {/* Deep Thinking Toggle */}
-                <PixelButton
-                    theme={theme}
-                    variant={isDeepThinkingEnabled ? 'primary' : 'secondary'}
-                    className={`
-                        w-9 h-9 !p-0 flex items-center justify-center
-                        ${isDeepThinkingEnabled ? 'border-blue-500 shadow-[2px_2px_0px_0px_rgba(59,130,246,1)]' : ''}
-                    `}
-                    title={t.deepThinking}
-                    onClick={() => setIsDeepThinkingEnabled(!isDeepThinkingEnabled)}
-                >
-                    <BrainCircuit size={20} className={isDeepThinkingEnabled ? 'text-white' : ''} />
-                </PixelButton>
+                {/* Deep Thinking Toggle - HIDDEN when streaming */}
+                {!isStreaming && (
+                    <div className="relative group">
+                        <PixelButton
+                            theme={theme}
+                            variant="secondary" // Base variant, overridden by className
+                            className={`
+                                w-9 h-9 !p-0 flex items-center justify-center transition-all duration-300
+                                ${isDeepThinkingEnabled 
+                                    ? 'bg-green-600 border-green-800 text-white shadow-[inset_0_0_10px_rgba(255,255,255,0.3)]' 
+                                    : 'opacity-50 grayscale hover:grayscale-0 hover:opacity-100'}
+                            `}
+                            title={t.deepThinking}
+                            onClick={() => setIsDeepThinkingEnabled(!isDeepThinkingEnabled)}
+                        >
+                            <BrainCircuit size={20} className={isDeepThinkingEnabled ? 'animate-pulse' : ''} />
+                        </PixelButton>
+                    </div>
+                )}
 
                 {isStreaming && (
                    <div className={`flex items-center mr-4 ${styles.text}`}>

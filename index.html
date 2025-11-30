@@ -83,20 +83,7 @@
         border-radius: 2px;
         font-size: 1.1em;
       }
-      .markdown-body pre {
-        background: rgba(0,0,0,0.8);
-        color: #00ff00; /* Matrix green for code */
-        padding: 1em;
-        overflow-x: auto;
-        border: 2px solid currentColor;
-        margin-bottom: 1em;
-      }
-      .markdown-body pre code {
-        background: transparent;
-        color: inherit;
-        padding: 0;
-        font-size: 1em;
-      }
+      /* Removed global pre styling to let SyntaxHighlighter take over */
       
       .markdown-body blockquote {
         border-left: 4px solid currentColor;
@@ -215,7 +202,10 @@
     "react-markdown": "https://esm.sh/react-markdown@8.0.7?bundle",
     "remark-gfm": "https://esm.sh/remark-gfm@3.0.1?bundle",
     "remark-math": "https://esm.sh/remark-math@5.1.1?bundle",
-    "rehype-katex": "https://esm.sh/rehype-katex@6.0.3?bundle"
+    "rehype-katex": "https://esm.sh/rehype-katex@6.0.3?bundle",
+    "react-syntax-highlighter": "https://esm.sh/react-syntax-highlighter@15.5.0?bundle&external=react,react-dom",
+    "react-syntax-highlighter/dist/esm/styles/prism": "https://esm.sh/react-syntax-highlighter@15.5.0/dist/esm/styles/prism?bundle&external=react,react-dom",
+    "react-syntax-highlighter/": "https://aistudiocdn.com/react-syntax-highlighter@^16.1.0/"
   }
 }
 </script>
