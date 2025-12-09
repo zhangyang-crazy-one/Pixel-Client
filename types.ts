@@ -29,10 +29,22 @@ export interface ChatSession {
 export interface LLMProvider {
   id: string;
   name: string;
-  type: 'openai' | 'anthropic' | 'deepseek' | 'custom';
+  type: string; // Changed from enum to string to support dynamic adapters
   baseUrl: string;
   apiKey: string;
   icon?: string; // emoji or css color
+}
+
+export interface ProviderAdapter {
+  name: string;
+  provider: string;
+}
+
+export interface ProviderTestResponse {
+  success: boolean;
+  message: string;
+  latency?: number;
+  details?: any;
 }
 
 export type ModelType = 'chat' | 'embedding' | 'rerank';
@@ -47,6 +59,7 @@ export interface LLMModel {
   maxTokens?: number; // Chat only
   temperature?: number; // Chat only
   dimensions?: number; // Embedding only
+  isDefault?: boolean; // New field for default model
 }
 
 export interface AceConfig {

@@ -2,6 +2,7 @@
 
 
 
+
 import { LLMProvider, LLMModel, Theme, AceConfig, Language } from './types';
 
 // ApexBridge Configuration
@@ -172,6 +173,7 @@ export const TRANSLATIONS = {
     apiBaseUrl: "API Base URL",
     apiKey: "API Key",
     saveProvider: "SAVE PROVIDER",
+    updateProvider: "UPDATE PROVIDER",
     displayName: "Display Name",
     modelId: "Model ID (API)",
     context: "Context (Tokens)",
@@ -207,7 +209,20 @@ export const TRANSLATIONS = {
     changeLanguage: "Change Language",
     mascotConfig: "MASCOT",
     mascotSystemPrompt: "Mascot System Prompt",
-    mascotPromptPlaceholder: "Enter custom persona instruction for the mascot..."
+    mascotPromptPlaceholder: "Enter custom persona instruction for the mascot...",
+    // New Translations
+    default: "DEFAULT",
+    setAsDefault: "Set as Default Model",
+    testConnection: "TEST CONNECTION",
+    connectionSuccess: "CONNECTION SUCCESSFUL",
+    connectionFailed: "CONNECTION FAILED",
+    latency: "Latency",
+    deleteProviderConfirm: "Delete this provider?",
+    deleteModelConfirm: "Delete this model?",
+    saveFailed: "Failed to save. Ensure backend is running.",
+    editProvider: "EDIT PROVIDER",
+    editModel: "EDIT MODEL",
+    launch: "LAUNCH!"
   },
   zh: {
     currentChatModel: "当前对话模型",
@@ -249,6 +264,7 @@ export const TRANSLATIONS = {
     apiBaseUrl: "API 基础地址",
     apiKey: "API 密钥",
     saveProvider: "保存服务商",
+    updateProvider: "更新服务商",
     displayName: "显示名称",
     modelId: "模型 ID (API)",
     context: "上下文 (Tokens)",
@@ -284,7 +300,20 @@ export const TRANSLATIONS = {
     changeLanguage: "切换语言",
     mascotConfig: "看板娘",
     mascotSystemPrompt: "看板娘提示词",
-    mascotPromptPlaceholder: "输入看板娘的自定义人设指令..."
+    mascotPromptPlaceholder: "输入看板娘的自定义人设指令...",
+    // New Translations
+    default: "默认",
+    setAsDefault: "设为默认模型",
+    testConnection: "测试连接",
+    connectionSuccess: "连接成功",
+    connectionFailed: "连接失败",
+    latency: "延迟",
+    deleteProviderConfirm: "确认删除该服务商？",
+    deleteModelConfirm: "确认删除该模型？",
+    saveFailed: "保存失败。请确保后端正在运行。",
+    editProvider: "编辑服务商",
+    editModel: "编辑模型",
+    launch: "发射！"
   },
   ja: {
     currentChatModel: "現在のチャットモデル",
@@ -326,6 +355,7 @@ export const TRANSLATIONS = {
     apiBaseUrl: "API ベースURL",
     apiKey: "API キー",
     saveProvider: "プロバイダーを保存",
+    updateProvider: "プロバイダーを更新",
     displayName: "表示名",
     modelId: "モデル ID (API)",
     context: "コンテキスト (Tokens)",
@@ -361,6 +391,19 @@ export const TRANSLATIONS = {
     changeLanguage: "言語変更",
     mascotConfig: "マスコット",
     mascotSystemPrompt: "マスコットのプロンプト",
-    mascotPromptPlaceholder: "マスコットのカスタムペルソナ指示を入力..."
+    mascotPromptPlaceholder: "マスコットのカスタムペルソナ指示を入力...",
+    // New Translations
+    default: "既定",
+    setAsDefault: "デフォルトに設定",
+    testConnection: "接続テスト",
+    connectionSuccess: "接続成功",
+    connectionFailed: "接続失敗",
+    latency: "レイテンシ",
+    deleteProviderConfirm: "このプロバイダーを削除しますか？",
+    deleteModelConfirm: "このモデルを削除しますか？",
+    saveFailed: "保存に失敗しました。バックエンドを確認してください。",
+    editProvider: "プロバイダー編集",
+    editModel: "モデル編集",
+    launch: "発射！"
   }
 };

@@ -1,11 +1,13 @@
 
 
 
+
+
 import React, { useState, useEffect } from 'react';
-import { Theme, LLMProvider, LLMModel, ModelType, AceConfig, Language } from '../types';
+import { Theme, LLMProvider, LLMModel, ModelType, AceConfig, Language, ProviderAdapter } from '../types';
 import { PixelButton, PixelInput, PixelCard, PixelSelect, PixelBadge } from './PixelUI';
 import { THEME_STYLES, TRANSLATIONS } from '../constants';
-import { Trash2, Plus, Zap, X, Cpu, Save, AlertTriangle, Edit, Smile } from 'lucide-react';
+import { Trash2, Plus, Zap, X, Cpu, Save, AlertTriangle, Edit, Smile, Star, Activity, Wifi } from 'lucide-react';
 import { ApiClient } from '../services/apiClient';
 
 interface ModelManagerProps {
@@ -39,6 +41,13 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
   const styles = THEME_STYLES[theme];
   const t = TRANSLATIONS[language];
 
+  // Data State
+  const [providerAdapters, setProviderAdapters] = useState<ProviderAdapter[]>([]);
+  
+  // Connection Test State
+  const [isTestingConnection, setIsTestingConnection] = useState(false);
+  const [connectionResult, setConnectionResult] = useState<{success: boolean, message: string, latency?: number} | null>(null);
+
   // Edit Mode States
   const [editingProviderId, setEditingProviderId] = useState<string | null>(null);
   const [editingModelId, setEditingModelId] = useState<string | null>(null);
@@ -51,7 +60,8 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
     contextLength: 4096, 
     temperature: 0.7,
     maxTokens: 2048,
-    dimensions: 1536
+    dimensions: 1536,
+    isDefault: false
   });
   // Local State for ACE Config
   const [localAceConfig, setLocalAceConfig] = useState<AceConfig>(aceConfig);
@@ -68,6 +78,9 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
           const fetchedModels = await ApiClient.getAllModels();
           onUpdateModels(fetchedModels);
 
+          const adapters = await ApiClient.getProviderAdapters();
+          setProviderAdapters(adapters);
+
           // Load Mascot Config
           const storedMascotPrompt = localStorage.getItem('pixel_mascot_system_prompt');
           if (storedMascotPrompt) setMascotSystemPrompt(storedMascotPrompt);
@@ -79,6 +92,7 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
 
   const handleEditProvider = (p: LLMProvider) => {
       setEditingProviderId(p.id);
+      setConnectionResult(null); // Reset test result
       // When editing, clear apiKey so user doesn't accidentally save masked key. 
       // If they want to update it, they type a new one.
       setNewProvider({ ...p, apiKey: '' }); 
@@ -86,6 +100,7 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
 
   const handleCancelProvider = () => {
       setEditingProviderId(null);
+      setConnectionResult(null);
       setNewProvider({ type: 'custom', name: '', baseUrl: '', apiKey: '' });
   };
 
@@ -102,8 +117,29 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
         }
         setNewProvider({ type: 'custom', name: '', baseUrl: '', apiKey: '' });
     } catch (e) {
-        alert("Failed to save provider. Ensure backend is running.");
+        alert(t.saveFailed);
     }
+  };
+
+  const handleTestConnection = async () => {
+      if (!editingProviderId) return;
+      setIsTestingConnection(true);
+      setConnectionResult(null);
+      try {
+          const result = await ApiClient.testProviderConnection(editingProviderId);
+          setConnectionResult({
+              success: result.success,
+              message: result.message,
+              latency: result.latency
+          });
+      } catch (e) {
+          setConnectionResult({
+              success: false,
+              message: t.connectionFailed
+          });
+      } finally {
+          setIsTestingConnection(false);
+      }
   };
 
   const handleEditModel = (m: LLMModel) => {
@@ -126,7 +162,8 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
         temperature: 0.7,
         maxTokens: 2048,
         dimensions: 1536,
-        providerId: ''
+        providerId: '',
+        isDefault: false
       });
   };
 
@@ -143,7 +180,8 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
       contextLength: newModel.contextLength,
       maxTokens: newModel.maxTokens,
       temperature: newModel.temperature,
-      dimensions: newModel.dimensions
+      dimensions: newModel.dimensions,
+      isDefault: newModel.isDefault
     };
 
     try {
@@ -156,36 +194,38 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
             onUpdateModels([...models, created]);
         }
         
+        // Reset form but allow keeping some defaults for rapid entry if needed
         setNewModel({ 
             ...newModel, 
             name: '', 
-            modelId: '' 
+            modelId: '',
+            isDefault: false
         });
     } catch (e) {
-        alert("Failed to save model.");
+        alert(t.saveFailed);
     }
   };
 
   const handleDeleteProvider = async (id: string) => {
-    if (!confirm("Delete this provider?")) return;
+    if (!confirm(t.deleteProviderConfirm)) return;
     try {
         await ApiClient.deleteProvider(id);
         onUpdateProviders(providers.filter(p => p.id !== id));
         onUpdateModels(models.filter(m => m.providerId !== id));
         if (editingProviderId === id) handleCancelProvider();
     } catch (e) {
-        alert("Error deleting provider");
+        alert(t.saveFailed);
     }
   };
 
   const handleDeleteModel = async (model: LLMModel) => {
-      if (!confirm("Delete this model?")) return;
+      if (!confirm(t.deleteModelConfirm)) return;
       try {
           await ApiClient.deleteModel(model.providerId, model.id);
           onUpdateModels(models.filter(x => x.id !== model.id));
           if (editingModelId === model.id) handleCancelModel();
       } catch (e) {
-          alert("Error deleting model");
+          alert(t.saveFailed);
       }
   };
 
@@ -254,6 +294,11 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
         <div>
           <div className="font-bold flex items-center gap-2">
               {m.name}
+              {m.isDefault && (
+                  <PixelBadge theme={theme} color="bg-yellow-400 text-black border-yellow-600">
+                      {t.default}
+                  </PixelBadge>
+              )}
           </div>
           <div className="text-xs opacity-70">{parent?.name} / {m.modelId}</div>
           <div className="text-[10px] opacity-50 mt-1 font-mono">
@@ -287,7 +332,7 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
                        <rect x="4" y="4" width="2" height="2" fill="#4fc3f7" />
                        <rect x="3" y="11" width="4" height="3" fill="orange" className="animate-pulse" />
                    </svg>
-                   <div className="text-center text-white font-bold mt-2 bg-black px-2">LAUNCH!</div>
+                   <div className="text-center text-white font-bold mt-2 bg-black px-2">{t.launch}</div>
               </div>
           </div>
       )}
@@ -523,7 +568,7 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
                  <div className="space-y-4">
                    <div className="flex justify-between items-center border-b-2 border-black mb-2">
                        <h3 className="text-xl font-bold">
-                           {editingProviderId ? "EDIT PROVIDER" : t.addProvider}
+                           {editingProviderId ? t.editProvider : t.addProvider}
                        </h3>
                        {editingProviderId && (
                            <button onClick={handleCancelProvider} className="text-xs text-red-500 font-bold hover:underline">{t.cancel}</button>
@@ -532,26 +577,52 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
                    <div className="grid grid-cols-2 gap-4">
                       <PixelInput theme={theme} label={t.name} placeholder="e.g. Local DeepSeek" value={newProvider.name || ''} onChange={e => setNewProvider({...newProvider, name: e.target.value})} />
                       <PixelSelect theme={theme} label={t.type} value={newProvider.type} onChange={e => setNewProvider({...newProvider, type: e.target.value as any})} disabled={!!editingProviderId}>
-                          <option value="openai">OpenAI Compatible</option>
-                          <option value="anthropic">Anthropic</option>
-                          <option value="deepseek">DeepSeek</option>
-                          <option value="custom">Custom</option>
+                          {providerAdapters.length > 0 ? (
+                              providerAdapters.map(adapter => (
+                                  <option key={adapter.provider} value={adapter.provider}>{adapter.name}</option>
+                              ))
+                          ) : (
+                              // Fallback if API hasn't loaded
+                              <option value="custom">Custom</option>
+                          )}
                       </PixelSelect>
                    </div>
                    <PixelInput theme={theme} label={t.apiBaseUrl} placeholder="https://..." value={newProvider.baseUrl || ''} onChange={e => setNewProvider({...newProvider, baseUrl: e.target.value})} />
                    <PixelInput theme={theme} label={t.apiKey} type="password" placeholder={editingProviderId ? "(Leave empty to keep existing)" : "sk-..."} value={newProvider.apiKey || ''} onChange={e => setNewProvider({...newProvider, apiKey: e.target.value})} />
                    
-                   <div className="flex gap-2 mt-4">
-                     <PixelButton theme={theme} onClick={handleSaveProvider} disabled={!newProvider.name || !newProvider.baseUrl}>
-                       {editingProviderId ? <Save className="w-4 h-4" /> : <Plus className="w-4 h-4" />} {editingProviderId ? "UPDATE PROVIDER" : t.saveProvider}
-                     </PixelButton>
+                   {/* Connection Test & Save */}
+                   <div className="flex flex-col gap-2 mt-4">
+                        <div className="flex gap-2">
+                            <PixelButton theme={theme} onClick={handleSaveProvider} disabled={!newProvider.name || !newProvider.baseUrl}>
+                                {editingProviderId ? <Save className="w-4 h-4" /> : <Plus className="w-4 h-4" />} {editingProviderId ? t.updateProvider : t.saveProvider}
+                            </PixelButton>
+                            
+                            {editingProviderId && (
+                                <PixelButton theme={theme} variant="secondary" onClick={handleTestConnection} disabled={isTestingConnection}>
+                                    {isTestingConnection ? <Activity className="w-4 h-4 animate-spin"/> : <Wifi className="w-4 h-4" />} {t.testConnection}
+                                </PixelButton>
+                            )}
+                        </div>
+                        
+                        {/* Test Result Display */}
+                        {connectionResult && (
+                            <div className={`
+                                p-2 text-xs font-bold border-2 border-black flex items-center justify-between
+                                ${connectionResult.success ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}
+                            `}>
+                                <span>{connectionResult.success ? t.connectionSuccess : t.connectionFailed}: {connectionResult.message}</span>
+                                {connectionResult.latency && (
+                                    <span className="bg-black/10 px-2 py-0.5 rounded">{t.latency}: {connectionResult.latency}ms</span>
+                                )}
+                            </div>
+                        )}
                    </div>
                  </div>
                ) : (
                  <div className="space-y-4">
                    <div className="flex justify-between items-center border-b-2 border-black mb-2">
                         <h3 className="text-xl font-bold">
-                           {editingModelId ? "EDIT MODEL" : t.addModel} <span className="text-sm font-normal opacity-50 ml-2">({newModel.type?.toUpperCase()})</span>
+                           {editingModelId ? t.editModel : t.addModel} <span className="text-sm font-normal opacity-50 ml-2">({newModel.type?.toUpperCase()})</span>
                         </h3>
                         {editingModelId && (
                            <button onClick={handleCancelModel} className="text-xs text-red-500 font-bold hover:underline">{t.cancel}</button>
@@ -588,7 +659,22 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
                            <PixelInput theme={theme} label={t.dimensions} type="number" value={newModel.dimensions || ''} onChange={e => setNewModel({...newModel, dimensions: parseInt(e.target.value)})} placeholder="1536" />
                        </div>
                    )}
-  
+                   
+                   {/* Custom Pixel Checkbox for "Set as Default" */}
+                   <div className="flex items-center gap-2 mt-2">
+                      <input 
+                         type="checkbox" 
+                         id="isDefault" 
+                         className="w-5 h-5 accent-pink-500 border-2 border-black cursor-pointer"
+                         checked={newModel.isDefault || false}
+                         onChange={e => setNewModel({...newModel, isDefault: e.target.checked})}
+                      />
+                      <label htmlFor="isDefault" className="text-sm font-bold uppercase cursor-pointer select-none">
+                          <Star size={14} className="inline mr-1" fill={newModel.isDefault ? "currentColor" : "none"}/>
+                          {t.setAsDefault}
+                      </label>
+                   </div>
+
                    {/* Rerank models have no additional configuration inputs */}
                    
                    <div className="flex gap-2 mt-4">
@@ -596,7 +682,7 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
                        {testStatus === 'loading' ? t.testing : testStatus === 'success' ? t.success : t.testModel}
                      </PixelButton>
                      <PixelButton theme={theme} onClick={handleSaveModel} disabled={!newModel.providerId || !newModel.name}>
-                       {editingModelId ? <Save className="w-4 h-4" /> : <Plus className="w-4 h-4" />} {editingModelId ? "UPDATE MODEL" : t.addModel}
+                       {editingModelId ? <Save className="w-4 h-4" /> : <Plus className="w-4 h-4" />} {editingModelId ? t.editModel : t.addModel}
                      </PixelButton>
                    </div>
                    {testStatus === 'success' && <div className="text-green-600 font-bold animate-bounce">{t.modelVerified} ★</div>}

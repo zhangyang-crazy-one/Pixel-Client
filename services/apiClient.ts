@@ -1,6 +1,8 @@
 
+
+
 import { API_BASE_URL, API_KEY } from '../constants';
-import { LLMModel, LLMProvider, ModelType, ApiSession, SessionHistory, Message } from '../types';
+import { LLMModel, LLMProvider, ModelType, ApiSession, SessionHistory, Message, ProviderAdapter, ProviderTestResponse } from '../types';
 
 const fetchWithTimeout = async (url: string, options: RequestInit = {}, timeout = 5000) => {
     const controller = new AbortController();
@@ -45,6 +47,7 @@ interface ApiModel {
   modelName: string;
   modelType: string;
   enabled: boolean;
+  isDefault?: boolean;
   modelConfig?: {
     contextLength?: number;
     maxTokens?: number;
@@ -67,7 +70,7 @@ interface ApiMessage {
 const adaptProvider = (apiProvider: ApiProvider): LLMProvider => ({
   id: apiProvider.id.toString(),
   name: apiProvider.name,
-  type: apiProvider.provider as any,
+  type: apiProvider.provider,
   baseUrl: apiProvider.baseConfig?.baseURL || '',
   apiKey: '', // Key is masked by API
   icon: '🔧'
@@ -82,7 +85,8 @@ const adaptModel = (apiModel: ApiModel): LLMModel => ({
   contextLength: apiModel.modelConfig?.contextLength,
   maxTokens: apiModel.modelConfig?.maxTokens,
   temperature: apiModel.modelConfig?.temperature,
-  dimensions: apiModel.modelConfig?.dimensions
+  dimensions: apiModel.modelConfig?.dimensions,
+  isDefault: apiModel.isDefault
 });
 
 const adaptMessage = (apiMsg: ApiMessage): Message => ({
@@ -108,6 +112,36 @@ export const ApiClient = {
         console.warn("API Error (Providers):", e);
         return []; // Fallback/Mock for UI safety
     }
+  },
+
+  getProviderAdapters: async (): Promise<ProviderAdapter[]> => {
+      try {
+          const res = await fetchWithTimeout(`${API_BASE_URL}/api/llm/providers/adapters`, { headers: getHeaders() });
+          if (!res.ok) throw new Error('Failed to fetch adapters');
+          const data = await res.json();
+          return data.adapters || [];
+      } catch (e) {
+          console.warn("API Error (Adapters):", e);
+          return [];
+      }
+  },
+
+  testProviderConnection: async (id: string): Promise<ProviderTestResponse> => {
+      try {
+          const res = await fetchWithTimeout(`${API_BASE_URL}/api/llm/providers/${id}/test`, { 
+              method: 'POST',
+              headers: getHeaders() 
+          });
+          // API returns 200 for success, maybe others for fail, but response body contains success field
+          const data = await res.json();
+          return data;
+      } catch (e) {
+          console.error("Test connection error:", e);
+          return {
+              success: false,
+              message: e instanceof Error ? e.message : 'Unknown network error'
+          };
+      }
   },
 
   createProvider: async (provider: Partial<LLMProvider>): Promise<LLMProvider> => {
@@ -175,18 +209,7 @@ export const ApiClient = {
         if (!res.ok) throw new Error('Failed to fetch all models');
         const data = await res.json();
         
-        return (data.models || []).map((m: any) => ({
-            id: m.id.toString(),
-            providerId: m.providerId.toString(),
-            name: m.modelName,
-            modelId: m.modelKey,
-            type: m.modelType as ModelType,
-            // Map config if available flattened, otherwise defaults
-            contextLength: m.modelConfig?.contextLength || 4096,
-            maxTokens: m.modelConfig?.maxTokens,
-            temperature: m.modelConfig?.temperature,
-            dimensions: m.modelConfig?.dimensions
-        }));
+        return (data.models || []).map((m: any) => adaptModel(m));
       } catch (e) {
           console.warn("API Error (Models):", e);
           return [];
@@ -204,7 +227,8 @@ export const ApiClient = {
              temperature: model.temperature,
              dimensions: model.dimensions
          },
-         enabled: true
+         enabled: true,
+         isDefault: model.isDefault
      };
      
      const res = await fetchWithTimeout(`${API_BASE_URL}/api/llm/providers/${model.providerId}/models`, {
@@ -222,6 +246,7 @@ export const ApiClient = {
          modelName: model.name,
          // Note: modelType is typically not editable after creation in this API design
          enabled: true,
+         isDefault: model.isDefault,
          modelConfig: {
              contextLength: model.contextLength,
              maxTokens: model.maxTokens,
