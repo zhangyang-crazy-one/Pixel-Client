@@ -371,138 +371,196 @@ const ThinkingBlock: React.FC<{ content: string; theme: Theme; language: Languag
     );
 });
 
-const ToolActionBlock: React.FC<{ content: string; theme: Theme; language?: Language }> = React.memo(({ content, theme, language = 'en' }) => {
+const ToolDetails: React.FC<{ content: string; theme: Theme; language: Language; index: number }> = React.memo(({ content, theme, language, index }) => {
     const isLight = theme === Theme.LIGHT;
     
-    // Parse XML
-    const { name, params, error } = useMemo(() => {
+    const { params, error } = useMemo(() => {
         try {
-            // Check for unclosed tag if streaming, attempt to close it
             let safeContent = content;
-            if (!content.includes('</tool_action>')) {
-                safeContent += '</tool_action>';
-            }
-
+            if (!content.includes('</tool_action>')) safeContent += '</tool_action>';
             const parser = new DOMParser();
             const doc = parser.parseFromString(safeContent, "text/xml");
-            
-            // Check for parser errors
-            const parseError = doc.querySelector("parsererror");
-            if (parseError) {
-                return { name: 'Unknown', params: [], error: parseError.textContent };
-            }
+            if (doc.querySelector("parsererror")) return { params: [], error: 'Parsing Error' };
 
             const root = doc.querySelector("tool_action");
-            if (!root) return { name: 'Unknown', params: [], error: 'Invalid XML structure' };
+            if (!root) return { params: [], error: 'Invalid XML' };
 
-            const toolName = root.getAttribute("name") || "Unknown Tool";
-            
-            // Extract parameters from child nodes
             const extractedParams: { key: string, attrs: Record<string,string>, value: string }[] = [];
-            
             Array.from(root.children).forEach(child => {
                 const attrs: Record<string, string> = {};
-                Array.from(child.attributes).forEach(attr => {
-                    attrs[attr.name] = attr.value;
-                });
-                extractedParams.push({
-                    key: child.tagName,
-                    attrs,
-                    value: child.textContent || ''
-                });
+                Array.from(child.attributes).forEach(attr => attrs[attr.name] = attr.value);
+                extractedParams.push({ key: child.tagName, attrs, value: child.textContent || '' });
             });
 
-            return { name: toolName, params: extractedParams, error: null };
+            return { params: extractedParams, error: null };
         } catch (e) {
-            return { name: 'Error', params: [], error: String(e) };
+            return { params: [], error: String(e) };
         }
     }, [content]);
 
+    return (
+        <div className={`p-2 border-l-2 ${isLight ? 'border-indigo-200' : 'border-indigo-800'}`}>
+            <div className="text-[10px] uppercase font-bold opacity-50 mb-1">Call #{index + 1}</div>
+            <div className="space-y-2 overflow-x-auto">
+                {error ? <div className="text-red-500 text-xs">{error}</div> : 
+                params.length === 0 ? <span className="opacity-50 italic text-xs">No parameters</span> : 
+                params.map((p, idx) => (
+                    <div key={idx} className="flex flex-col gap-1 text-xs">
+                         <div className="flex items-center gap-2">
+                             <span className="font-bold text-blue-500">{p.key}</span>
+                             {Object.entries(p.attrs).map(([k, v]) => (
+                                 <span key={k} className="opacity-70">
+                                     <span className="text-purple-500">{k}</span>=
+                                     <span className="text-green-600">"{v}"</span>
+                                 </span>
+                             ))}
+                         </div>
+                         {p.value && (
+                             <div className={`pl-4 border-l-2 ${isLight ? 'border-gray-300' : 'border-gray-700'}`}>
+                                 {p.value}
+                             </div>
+                         )}
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+});
+
+const ToolActionBlock: React.FC<{ 
+    name: string; 
+    count: number; 
+    rawContents: string[]; 
+    theme: Theme; 
+    language?: Language 
+}> = React.memo(({ name, count, rawContents, theme, language = 'en' }) => {
+    const [isExpanded, setIsExpanded] = useState(false);
+    const isLight = theme === Theme.LIGHT;
+
     // Localization
     const titleText = useMemo(() => {
-        if (language === 'zh') return `调用工具: ${name}`;
-        if (language === 'ja') return `ツール呼び出し: ${name}`;
-        return `Calling Tool: ${name}`;
+        if (language === 'zh') return `执行工具: ${name}`;
+        if (language === 'ja') return `ツール実行: ${name}`;
+        return `Executing Tool: ${name}`;
     }, [language, name]);
 
     return (
         <div className={`
-            my-4 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.5)] overflow-hidden font-mono text-sm
-            ${isLight ? 'bg-indigo-50/50' : 'bg-indigo-900/20'}
+            my-2 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.5)] overflow-hidden font-mono text-sm
+            transition-all duration-200
+            ${isLight ? 'bg-indigo-50' : 'bg-[#1a1b26]'}
         `}>
-            {/* Header */}
-            <div className={`
-                flex items-center gap-2 px-3 py-2 border-b-2 border-black
-                ${isLight ? 'bg-indigo-200 text-indigo-900' : 'bg-indigo-900 text-indigo-100'}
-            `}>
-                <Terminal size={14} />
-                <span className="font-bold uppercase">{titleText}</span>
-            </div>
+           {/* Header Bar */}
+           <div 
+             onClick={() => setIsExpanded(!isExpanded)}
+             className={`
+                flex items-center justify-between px-3 py-2 cursor-pointer select-none
+                ${isLight ? 'hover:bg-indigo-100' : 'hover:bg-white/5'}
+             `}
+           >
+              <div className="flex items-center gap-3">
+                 {/* Dynamic Spinner */}
+                 <div className="relative w-5 h-5 flex items-center justify-center">
+                    <div className={`absolute inset-0 border-2 border-dashed rounded-full animate-[spin_3s_linear_infinite] ${isLight ? 'border-indigo-600' : 'border-indigo-400'}`}></div>
+                    <Terminal size={12} className={isLight ? 'text-indigo-600' : 'text-indigo-400'} />
+                 </div>
+                 
+                 <div className="flex flex-col">
+                    <span className="font-bold uppercase tracking-wide leading-none">{titleText}</span>
+                    <span className="text-[10px] opacity-60 flex items-center gap-1 mt-0.5">
+                       <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
+                       Running...
+                    </span>
+                 </div>
+              </div>
 
-            {/* Content */}
-            <div className="p-3 space-y-2 overflow-x-auto">
-                {error ? (
-                    <div className="text-red-500 text-xs">{error}</div>
-                ) : (
-                    params.length === 0 ? <span className="opacity-50 italic text-xs">No parameters</span> : 
-                    params.map((p, idx) => (
-                        <div key={idx} className="flex flex-col gap-1 text-xs">
-                             <div className="flex items-center gap-2">
-                                 <span className="font-bold text-blue-500">{p.key}</span>
-                                 {/* Render attributes nicely */}
-                                 {Object.entries(p.attrs).map(([k, v]) => (
-                                     <span key={k} className="opacity-70">
-                                         <span className="text-purple-500">{k}</span>=
-                                         <span className="text-green-600">"{v}"</span>
-                                     </span>
-                                 ))}
-                             </div>
-                             {p.value && (
-                                 <div className={`pl-4 border-l-2 ${isLight ? 'border-gray-300' : 'border-gray-700'}`}>
-                                     {p.value}
-                                 </div>
-                             )}
-                        </div>
-                    ))
-                )}
-            </div>
-            
-            {/* Raw XML Toggle (Optional debug view, maybe added later) */}
+              {/* Count Indicator */}
+              <div className="flex items-center gap-3">
+                 {count > 1 && (
+                     <div key={count} className="animate-bounce">
+                        <PixelBadge theme={theme} color="bg-yellow-400 text-black">
+                           ×{count}
+                        </PixelBadge>
+                     </div>
+                 )}
+                 <div className="opacity-50">
+                    {isExpanded ? <ChevronDown size={14}/> : <ChevronRight size={14}/>}
+                 </div>
+              </div>
+           </div>
+
+           {/* Expanded Params (Hidden by default) */}
+           {isExpanded && (
+               <div className={`border-t-2 border-black/10 p-2 space-y-2 ${isLight ? 'bg-white' : 'bg-black/20'}`}>
+                   {rawContents.map((content, idx) => (
+                       <ToolDetails key={idx} content={content} index={idx} theme={theme} language={language} />
+                   ))}
+               </div>
+           )}
         </div>
     );
 });
 
 const parseMessageContent = (content: string, theme: Theme, language: Language) => {
-    // Regex to split by <thinking> OR <tool_action> blocks
-    // Captures the entire block including tags
-    // The (?:...|$) allows matching unclosed tags at the end of the string (streaming support)
+    // Regex captures <thinking>...</thinking> OR <tool_action>...</tool_action> (including unclosed tags for streaming)
     const regex = /(<thinking>[\s\S]*?(?:<\/thinking>|$)|<tool_action[\s\S]*?(?:<\/tool_action>|$))/gi;
-    
     const parts = content.split(regex);
     
-    return parts.map((part, index) => {
-        if (!part.trim()) return null;
-        
-        // Handle Thinking Block
-        if (part.startsWith('<thinking')) {
-             // Extract inner content for ThinkingBlock
-             const inner = part.replace(/^<thinking>/i, '').replace(/<\/thinking>$/i, '');
-             return <ThinkingBlock key={`think-${index}`} content={inner} theme={theme} language={language} />;
+    const renderedNodes: React.ReactNode[] = [];
+    let pendingTools: string[] = [];
+    let currentToolName = '';
+
+    const flushTools = () => {
+        if (pendingTools.length > 0) {
+            renderedNodes.push(
+                <ToolActionBlock 
+                    key={`tool-group-${renderedNodes.length}`} 
+                    name={currentToolName} 
+                    count={pendingTools.length} 
+                    rawContents={[...pendingTools]} 
+                    theme={theme} 
+                    language={language} 
+                />
+            );
+            pendingTools = [];
+            currentToolName = '';
         }
-        
-        // Handle Tool Action Block
-        // Pass FULL content to let ToolActionBlock parse the XML attributes from the start tag
+    };
+
+    parts.forEach((part, index) => {
+        if (!part.trim()) return;
+
         if (part.startsWith('<tool_action')) {
-             return <ToolActionBlock key={`tool-${index}`} content={part} theme={theme} language={language} />;
+            // Simple regex to extract name attribute
+            const match = part.match(/name=['"]([^'"]+)['"]/);
+            const name = match ? match[1] : 'Unknown';
+
+            // If we have a pending tool group but this one is different, flush the previous one
+            if (currentToolName && name !== currentToolName) {
+                flushTools();
+            }
+
+            currentToolName = name;
+            pendingTools.push(part);
+        } else {
+            // Non-tool content found, flush any pending tools first
+            flushTools();
+
+            if (part.startsWith('<thinking')) {
+                const inner = part.replace(/^<thinking>/i, '').replace(/<\/thinking>$/i, '');
+                renderedNodes.push(<ThinkingBlock key={`think-${index}`} content={inner} theme={theme} language={language} />);
+            } else {
+                renderedNodes.push(
+                    <div key={`md-${index}`} className="markdown-body">
+                        <MarkdownRenderer text={part} theme={theme} />
+                    </div>
+                );
+            }
         }
-        
-        // Default Markdown
-        return (
-            <div key={`md-${index}`} className="markdown-body">
-                <MarkdownRenderer text={part} theme={theme} />
-            </div>
-        );
     });
+
+    flushTools(); // Final flush for trailing tools
+    return renderedNodes;
 };
 
 interface MessageBubbleProps {
