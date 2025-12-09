@@ -1,6 +1,4 @@
 
-
-
 import { API_BASE_URL, API_KEY } from '../constants';
 import { LLMModel, LLMProvider, ModelType, ApiSession, SessionHistory, Message, ProviderAdapter, ProviderTestResponse } from '../types';
 
@@ -140,6 +138,41 @@ export const ApiClient = {
           return {
               success: false,
               message: e instanceof Error ? e.message : 'Unknown network error'
+          };
+      }
+  },
+
+  testProviderConfiguration: async (payload: { provider: string, baseConfig: { apiKey: string, baseURL: string } }): Promise<{ success: boolean, message: string, hint?: string }> => {
+      try {
+          const res = await fetchWithTimeout(`${API_BASE_URL}/api/llm/providers/test-connect`, {
+              method: 'POST',
+              headers: getHeaders(),
+              body: JSON.stringify(payload)
+          });
+          const data = await res.json();
+          return data;
+      } catch (e) {
+           return {
+               success: false,
+               message: e instanceof Error ? e.message : 'Network Error'
+           };
+      }
+  },
+
+  validateModel: async (payload: { provider: string, baseConfig: { apiKey: string, baseURL: string }, model: string }): Promise<{ success: boolean, latency: number, message: string }> => {
+      try {
+          const res = await fetchWithTimeout(`${API_BASE_URL}/api/llm/providers/validate-model`, {
+              method: 'POST',
+              headers: getHeaders(),
+              body: JSON.stringify(payload)
+          });
+          const data = await res.json();
+          return data;
+      } catch (e) {
+          return {
+              success: false,
+              latency: 0,
+              message: e instanceof Error ? e.message : 'Network Error'
           };
       }
   },

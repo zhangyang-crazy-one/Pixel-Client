@@ -38,6 +38,7 @@ export interface LLMProvider {
 export interface ProviderAdapter {
   name: string;
   provider: string;
+  defaultBaseURL?: string; // Added field for auto-filling URL
 }
 
 export interface ProviderTestResponse {
