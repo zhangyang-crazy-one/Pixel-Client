@@ -432,12 +432,22 @@ const ToolActionBlock: React.FC<{
     count: number; 
     rawContents: string[]; 
     theme: Theme; 
-    language?: Language 
-}> = React.memo(({ name, count, rawContents, theme, language = 'en' }) => {
+    language?: Language;
+    state: 'running' | 'completed';
+}> = React.memo(({ name, count, rawContents, theme, language = 'en', state }) => {
     const [isExpanded, setIsExpanded] = useState(false);
     const isLight = theme === Theme.LIGHT;
 
-    // Localization
+    const { label, isRunning } = useMemo(() => {
+        const isRunning = state === 'running';
+        let label = '';
+        if (language === 'zh') label = isRunning ? '运行中...' : '已执行';
+        else if (language === 'ja') label = isRunning ? '実行中...' : '完了';
+        else label = isRunning ? 'Running...' : 'Executed';
+        return { label, isRunning };
+    }, [state, language]);
+
+    // Localization for title
     const titleText = useMemo(() => {
         if (language === 'zh') return `执行工具: ${name}`;
         if (language === 'ja') return `ツール実行: ${name}`;
@@ -459,17 +469,26 @@ const ToolActionBlock: React.FC<{
              `}
            >
               <div className="flex items-center gap-3">
-                 {/* Dynamic Spinner */}
+                 {/* Dynamic Spinner / Status Icon */}
                  <div className="relative w-5 h-5 flex items-center justify-center">
-                    <div className={`absolute inset-0 border-2 border-dashed rounded-full animate-[spin_3s_linear_infinite] ${isLight ? 'border-indigo-600' : 'border-indigo-400'}`}></div>
-                    <Terminal size={12} className={isLight ? 'text-indigo-600' : 'text-indigo-400'} />
+                    {isRunning ? (
+                        <div className={`absolute inset-0 border-2 border-dashed rounded-full animate-[spin_3s_linear_infinite] ${isLight ? 'border-indigo-600' : 'border-indigo-400'}`}></div>
+                    ) : (
+                        <div className={`absolute inset-0 border-2 rounded-full ${isLight ? 'border-green-600' : 'border-green-400'} opacity-50`}></div>
+                    )}
+                    
+                    {isRunning ? (
+                        <Terminal size={12} className={isLight ? 'text-indigo-600' : 'text-indigo-400'} />
+                    ) : (
+                        <Check size={12} className={isLight ? 'text-green-600' : 'text-green-400'} />
+                    )}
                  </div>
                  
                  <div className="flex flex-col">
                     <span className="font-bold uppercase tracking-wide leading-none">{titleText}</span>
-                    <span className="text-[10px] opacity-60 flex items-center gap-1 mt-0.5">
-                       <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
-                       Running...
+                    <span className={`text-[10px] opacity-60 flex items-center gap-1 mt-0.5 ${!isRunning && 'text-green-500 font-bold'}`}>
+                       {isRunning && <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>}
+                       {label}
                     </span>
                  </div>
               </div>
@@ -501,7 +520,7 @@ const ToolActionBlock: React.FC<{
     );
 });
 
-const parseMessageContent = (content: string, theme: Theme, language: Language) => {
+const parseMessageContent = (content: string, theme: Theme, language: Language, isStreamingMessage: boolean) => {
     // Regex captures <thinking>...</thinking> OR <tool_action>...</tool_action> (including unclosed tags for streaming)
     const regex = /(<thinking>[\s\S]*?(?:<\/thinking>|$)|<tool_action[\s\S]*?(?:<\/tool_action>|$))/gi;
     const parts = content.split(regex);
@@ -510,8 +529,13 @@ const parseMessageContent = (content: string, theme: Theme, language: Language) 
     let pendingTools: string[] = [];
     let currentToolName = '';
 
-    const flushTools = () => {
+    const flushTools = (isFinal: boolean) => {
         if (pendingTools.length > 0) {
+            // Determine state: 
+            // If we are flushing because we found other content (isFinal=false), it's completed.
+            // If we are flushing at the end (isFinal=true), check if message is still streaming.
+            const state = (isFinal && isStreamingMessage) ? 'running' : 'completed';
+
             renderedNodes.push(
                 <ToolActionBlock 
                     key={`tool-group-${renderedNodes.length}`} 
@@ -519,7 +543,8 @@ const parseMessageContent = (content: string, theme: Theme, language: Language) 
                     count={pendingTools.length} 
                     rawContents={[...pendingTools]} 
                     theme={theme} 
-                    language={language} 
+                    language={language}
+                    state={state}
                 />
             );
             pendingTools = [];
@@ -537,14 +562,14 @@ const parseMessageContent = (content: string, theme: Theme, language: Language) 
 
             // If we have a pending tool group but this one is different, flush the previous one
             if (currentToolName && name !== currentToolName) {
-                flushTools();
+                flushTools(false); // Not final, switching tools means previous group is done
             }
 
             currentToolName = name;
             pendingTools.push(part);
         } else {
             // Non-tool content found, flush any pending tools first
-            flushTools();
+            flushTools(false); // Not final, followed by text means completed
 
             if (part.startsWith('<thinking')) {
                 const inner = part.replace(/^<thinking>/i, '').replace(/<\/thinking>$/i, '');
@@ -559,7 +584,7 @@ const parseMessageContent = (content: string, theme: Theme, language: Language) 
         }
     });
 
-    flushTools(); // Final flush for trailing tools
+    flushTools(true); // Final flush for trailing tools
     return renderedNodes;
 };
 
@@ -610,7 +635,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ msg, theme, la
                   isHtml ? (
                       <HtmlPreviewBlock code={msg.content} theme={theme} defaultPreview={true} />
                   ) : (
-                      parseMessageContent(msg.content, theme, language)
+                      parseMessageContent(msg.content, theme, language, isStreaming && isLast)
                   )
               ) : (
                   <div className="flex items-center gap-2 py-2 opacity-70">
