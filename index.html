@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -7,7 +8,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=VT323&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Inter for Modern, VT323 for Pixel -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=VT323&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
     <!-- KaTeX CSS for Math Rendering -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
     
@@ -20,150 +22,95 @@
     <!-- PixelVerse Robot Favicon -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'><rect width='16' height='16' fill='%23000000'/><rect x='1' y='1' width='14' height='14' fill='%232D2B40'/><rect x='1' y='4' width='14' height='5' fill='%23FF00FF'/><rect x='3' y='5' width='3' height='3' fill='%2300FFFF'/><rect x='10' y='5' width='3' height='3' fill='%2300FFFF'/><rect x='4' y='12' width='8' height='1' fill='%23FFFFFF'/></svg>" />
     <style>
-      /* Custom Pixel Scrollbar */
-      ::-webkit-scrollbar {
+      /* Custom Scrollbar - Adaptive */
+      .theme-pixel ::-webkit-scrollbar {
         width: 12px;
         height: 12px;
       }
-      ::-webkit-scrollbar-track {
+      .theme-pixel ::-webkit-scrollbar-track {
         background: #2d2b40;
       }
-      ::-webkit-scrollbar-thumb {
+      .theme-pixel ::-webkit-scrollbar-thumb {
         background: #ff00ff;
         border: 2px solid #0d0c1d;
         box-shadow: inset -2px -2px 0px rgba(0,0,0,0.2);
       }
-      ::-webkit-scrollbar-thumb:hover {
-        background: #d900d9;
+
+      .theme-modern ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      .theme-modern ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      .theme-modern ::-webkit-scrollbar-thumb {
+        background: rgba(156, 163, 175, 0.5);
+        border-radius: 3px;
       }
       
       /* Base Font Settings */
       body {
-        font-family: 'VT323', 'Noto Sans SC', sans-serif;
+        margin: 0;
+        padding: 0;
+      }
+      
+      .theme-pixel {
+        font-family: 'VT323', 'Noto Sans SC', monospace;
         image-rendering: pixelated;
         cursor: url('data:image/svg+xml;utf8,<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2 2H14V4H16V6H18V12H16V14H14V16H12V18H10V22H2V2H2ZM4 4V20H8V16H10V14H12V12H14V8H12V6H10V4H4Z" fill="white"/><path d="M4 4H10V6H12V8H14V12H12V14H10V16H8V20H4V4Z" fill="black"/></svg>'), auto;
       }
 
-      /* Custom Font Utility for Mixed Content */
-      .font-pixel-verse {
-        font-family: 'VT323', 'Noto Sans SC', sans-serif;
+      .theme-modern {
+        font-family: 'Inter', 'Noto Sans SC', sans-serif;
+        -webkit-font-smoothing: antialiased;
       }
 
-      /* Chat Text - Force consistent font sizing/weight for mixed languages */
-      .font-chat {
-        font-family: 'Noto Sans SC', sans-serif;
-        font-weight: 500;
+      /* Markdown Styling */
+      .markdown-body p { margin-bottom: 0.75em; }
+      .markdown-body p:last-child { margin-bottom: 0; }
+      .markdown-body h1, .markdown-body h2, .markdown-body h3 {
+        font-weight: 700; margin-top: 1em; margin-bottom: 0.5em; line-height: 1.2;
       }
-
-      /* Markdown Styling for Chat */
-      .markdown-body p {
-        margin-bottom: 0.75em;
-      }
-      .markdown-body p:last-child {
-        margin-bottom: 0;
-      }
-      .markdown-body h1, .markdown-body h2, .markdown-body h3, .markdown-body h4 {
-        font-weight: 700;
-        margin-top: 1em;
-        margin-bottom: 0.5em;
-        line-height: 1.2;
-      }
-      .markdown-body h1 { font-size: 1.5em; border-bottom: 2px solid currentColor; padding-bottom: 0.2em; }
-      .markdown-body h2 { font-size: 1.3em; }
-      .markdown-body h3 { font-size: 1.1em; }
       
-      .markdown-body ul, .markdown-body ol {
-        margin-left: 1.5em;
-        margin-bottom: 0.75em;
-      }
-      .markdown-body ul { list-style-type: square; }
-      .markdown-body ol { list-style-type: decimal; }
-      
-      .markdown-body code {
+      .theme-pixel .markdown-body code {
         font-family: 'VT323', monospace;
         background: rgba(0,0,0,0.1);
         padding: 0.1em 0.3em;
         border-radius: 2px;
         font-size: 1.1em;
       }
-      /* Removed global pre styling to let SyntaxHighlighter take over */
-      
-      .markdown-body blockquote {
-        border-left: 4px solid currentColor;
-        padding-left: 1em;
-        font-style: italic;
-        opacity: 0.8;
-        margin-bottom: 1em;
-      }
-      
-      .markdown-body table {
-        border-collapse: collapse;
-        width: 100%;
-        margin-bottom: 1em;
-        font-size: 0.9em;
-      }
-      .markdown-body th, .markdown-body td {
-        border: 1px solid currentColor;
-        padding: 0.5em;
-        text-align: left;
-      }
-      .markdown-body th {
-        background: rgba(0,0,0,0.1);
-        font-weight: bold;
-      }
-      .markdown-body a {
-        text-decoration: underline;
-        font-weight: bold;
+
+      .theme-modern .markdown-body code {
+        font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+        background: rgba(125, 125, 125, 0.1);
+        padding: 0.2em 0.4em;
+        border-radius: 4px;
+        font-size: 0.85em;
       }
 
       /* Pixel Art Utilities */
       .pixel-border {
-        box-shadow: 
-          -2px 0 0 0 black,
-          2px 0 0 0 black,
-          0 -2px 0 0 black,
-          0 2px 0 0 black;
+        box-shadow: -2px 0 0 0 black, 2px 0 0 0 black, 0 -2px 0 0 black, 0 2px 0 0 black;
       }
       
-      .pixel-shadow {
-        box-shadow: 4px 4px 0px 0px rgba(0,0,0,1);
-      }
-
-      .pixel-shadow-sm {
-        box-shadow: 2px 2px 0px 0px rgba(0,0,0,1);
-      }
-
-      .pixel-shadow-hover:hover {
-        transform: translate(-2px, -2px);
-        box-shadow: 6px 6px 0px 0px rgba(0,0,0,1);
-      }
-      
-      .pixel-shadow-active:active {
-        transform: translate(2px, 2px);
-        box-shadow: 0px 0px 0px 0px rgba(0,0,0,1);
-      }
+      .pixel-shadow { box-shadow: 4px 4px 0px 0px rgba(0,0,0,1); }
+      .pixel-shadow-sm { box-shadow: 2px 2px 0px 0px rgba(0,0,0,1); }
+      .pixel-shadow-hover:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0px 0px rgba(0,0,0,1); }
+      .pixel-shadow-active:active { transform: translate(2px, 2px); box-shadow: 0px 0px 0px 0px rgba(0,0,0,1); }
 
       /* Animations */
       @keyframes float {
         0%, 100% { transform: translateY(0px); }
         50% { transform: translateY(-4px); }
       }
-      .animate-float {
-        animation: float 3s steps(4) infinite;
-      }
+      .animate-float { animation: float 3s steps(4) infinite; }
 
       @keyframes blink {
         0%, 100% { opacity: 1; }
         50% { opacity: 0; }
       }
-      .animate-cursor {
-        animation: blink 1s steps(2) infinite;
-      }
+      .animate-cursor { animation: blink 1s steps(2) infinite; }
 
-      @keyframes scanline {
-        0% { transform: translateY(-100%); }
-        100% { transform: translateY(100%); }
-      }
       .scanline-effect::after {
         content: "";
         position: absolute;
@@ -174,23 +121,12 @@
         z-index: 50;
       }
 
-      /* EASTER EGG: Rainbow Mode */
-      @keyframes rainbow-cycle {
-        0% { filter: hue-rotate(0deg); }
-        100% { filter: hue-rotate(360deg); }
-      }
       .rainbow-mode {
         animation: rainbow-cycle 2s linear infinite;
       }
-
-      /* EASTER EGG: Rocket Launch */
-      @keyframes launch {
-        0% { bottom: -100px; transform: translateX(-50%) scale(1); opacity: 1;}
-        20% { bottom: 20%; transform: translateX(-52%) scale(1.1); }
-        100% { bottom: 150%; transform: translateX(-48%) scale(1); opacity: 0;}
-      }
-      .animate-rocket {
-        animation: launch 4s ease-in forwards;
+      @keyframes rainbow-cycle {
+        0% { filter: hue-rotate(0deg); }
+        100% { filter: hue-rotate(360deg); }
       }
     </style>
   <script type="importmap">

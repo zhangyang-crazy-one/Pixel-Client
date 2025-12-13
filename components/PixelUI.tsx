@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Theme } from '../types';
 import { THEME_STYLES } from '../constants';
@@ -19,24 +20,22 @@ export const PixelButton: React.FC<PixelButtonProps> = ({
   const styles = THEME_STYLES[theme];
   
   let bgClass = styles.primary;
-  let textClass = 'text-white';
+  let textClass = styles.primaryText;
   
   if (variant === 'secondary') {
-    bgClass = 'bg-gray-500';
+    bgClass = styles.secondary;
+    textClass = styles.secondaryText;
   } else if (variant === 'danger') {
-    bgClass = 'bg-red-500';
+    bgClass = 'bg-red-500 hover:bg-red-600';
+    textClass = 'text-white';
   }
 
   return (
     <button
       className={`
-        relative px-4 py-2 font-bold uppercase tracking-widest
-        border-2 border-black
+        relative px-4 py-2 flex items-center justify-center gap-2
+        ${styles.button}
         ${bgClass} ${textClass}
-        pixel-shadow transition-transform
-        active:translate-x-[2px] active:translate-y-[2px] active:shadow-none
-        hover:brightness-110
-        flex items-center justify-center gap-2
         disabled:opacity-50 disabled:cursor-not-allowed
         ${className}
       `}
@@ -60,14 +59,14 @@ export const PixelCard: React.FC<PixelCardProps> = ({ theme, children, title, cl
   
   return (
     <div className={`
-      relative border-4 border-black ${styles.secondary}
-      pixel-shadow p-4 ${className}
+      relative p-4 ${styles.card} ${styles.radius} ${className}
     `}>
       {title && (
         <div className={`
-          absolute -top-5 left-2 px-2 py-1
-          border-2 border-black ${styles.primary} text-white
-          text-sm font-bold
+          absolute -top-3 left-4 px-2 py-0.5
+          ${styles.borderWidth} ${styles.borderColor} ${styles.primary} text-white
+          text-xs font-bold uppercase tracking-wider ${styles.radius}
+          ${styles.shadow === 'pixel-shadow' ? 'shadow-[2px_2px_0px_black]' : 'shadow-sm'}
         `}>
           {title}
         </div>
@@ -87,14 +86,15 @@ export const PixelInput: React.FC<PixelInputProps> = ({ theme, label, className 
   
   return (
     <div className="flex flex-col gap-1 w-full">
-      {label && <label className={`text-sm font-bold uppercase ${styles.text}`}>{label}</label>}
+      {label && <label className={`text-xs font-bold uppercase ${styles.textMuted}`}>{label}</label>}
       <input
         className={`
-          w-full p-2 outline-none border-2 border-black
+          w-full p-2 outline-none 
+          ${styles.borderWidth} ${styles.borderColor} ${styles.radius}
           ${styles.inputBg} ${styles.text}
-          focus:-translate-y-1 focus:shadow-[4px_4px_0px_0px_rgba(0,0,0,0.5)]
+          focus:border-blue-400
           transition-all duration-200
-          placeholder-gray-500
+          placeholder-gray-500/50
           ${className}
         `}
         {...props}
@@ -112,12 +112,14 @@ export const PixelSelect: React.FC<PixelSelectProps> = ({ theme, label, children
     const styles = THEME_STYLES[theme];
     return (
         <div className="flex flex-col gap-1 w-full">
-            {label && <label className={`text-sm font-bold uppercase ${styles.text}`}>{label}</label>}
+            {label && <label className={`text-xs font-bold uppercase ${styles.textMuted}`}>{label}</label>}
             <select
                 className={`
-                    w-full p-2 outline-none border-2 border-black
+                    w-full p-2 outline-none
+                    ${styles.borderWidth} ${styles.borderColor} ${styles.radius}
                     ${styles.inputBg} ${styles.text}
                     cursor-pointer
+                    focus:border-blue-400
                     ${className}
                 `}
                 {...props}
@@ -129,11 +131,14 @@ export const PixelSelect: React.FC<PixelSelectProps> = ({ theme, label, children
 };
 
 export const PixelBadge: React.FC<{ theme: Theme; children: React.ReactNode; color?: string }> = ({ theme, children, color }) => {
+    const styles = THEME_STYLES[theme];
+    const isPixel = styles.type === 'pixel';
+    
     return (
         <span className={`
-            inline-block px-2 py-0.5 text-xs font-bold border border-black
-            ${color ? color : 'bg-gray-300 text-black'}
-            shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]
+            inline-block px-2 py-0.5 text-[10px] font-bold 
+            ${isPixel ? 'border border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]' : 'rounded-full border border-transparent shadow-sm'}
+            ${color ? color : (isPixel ? 'bg-gray-300 text-black' : 'bg-gray-100 text-gray-700')}
         `}>
             {children}
         </span>

@@ -1,16 +1,12 @@
 
-
-
-
-
 import { LLMProvider, LLMModel, Theme, AceConfig, Language } from './types';
 
 // ApexBridge Configuration
 export const API_BASE_URL = 'http://localhost:3000';
 export const API_KEY = 'sk-apex-bridge-key'; // Replace with your actual bridge key
 
-export const INITIAL_PROVIDERS: LLMProvider[] = []; // Will be fetched from API
-export const INITIAL_MODELS: LLMModel[] = []; // Will be fetched from API
+export const INITIAL_PROVIDERS: LLMProvider[] = []; 
+export const INITIAL_MODELS: LLMModel[] = []; 
 
 export const INITIAL_ACE_CONFIG: AceConfig = {
   fastModelId: '',
@@ -18,51 +14,170 @@ export const INITIAL_ACE_CONFIG: AceConfig = {
   curatorModelId: ''
 };
 
+// Expanded Theme System
 export const THEME_STYLES = {
+  // PIXEL: High Contrast, Thick Borders, Sharp Edges
   [Theme.DARK]: {
+    type: 'pixel',
     bg: 'bg-[#0D0C1D]',
     text: 'text-[#FFEED1]',
-    primary: 'bg-[#FF00FF]', // Neon Magenta
+    textMuted: 'text-[#FFEED1]/60',
+    primary: 'bg-[#FF00FF] hover:brightness-110',
+    primaryText: 'text-white',
     secondary: 'bg-[#2D2B40]',
-    border: 'border-[#FF00FF]',
+    secondaryText: 'text-[#FFEED1]',
     accent: 'text-[#00FFFF]',
-    inputBg: 'bg-[#1a1929]'
+    border: 'border-2 border-[#FF00FF]',
+    
+    // Structural
+    font: 'font-pixel-verse',
+    radius: 'rounded-none',
+    borderWidth: 'border-2',
+    borderColor: 'border-black',
+    shadow: 'pixel-shadow',
+    inputBg: 'bg-[#1a1929]',
+    
+    // Layout specifics
+    sidebarBorder: 'border-r-4 border-black',
+    headerBorder: 'border-b-4 border-black',
+    card: 'border-4 border-black bg-[#2D2B40] pixel-shadow',
+    button: 'border-2 border-black pixel-shadow active:translate-x-[2px] active:translate-y-[2px] active:shadow-none uppercase tracking-widest font-bold'
   },
   [Theme.LIGHT]: {
+    type: 'pixel',
     bg: 'bg-[#FFEED1]',
     text: 'text-[#2d1b2e]',
-    primary: 'bg-[#FF7AA2]', // Sakura Pink
+    textMuted: 'text-[#2d1b2e]/60',
+    primary: 'bg-[#FF7AA2] hover:brightness-110',
+    primaryText: 'text-white',
     secondary: 'bg-[#FFF8E7]',
-    border: 'border-[#FF7AA2]',
+    secondaryText: 'text-[#2d1b2e]',
     accent: 'text-[#FF9900]',
-    inputBg: 'bg-[#ffffff]'
+    border: 'border-2 border-[#FF7AA2]',
+    
+    // Structural
+    font: 'font-pixel-verse',
+    radius: 'rounded-none',
+    borderWidth: 'border-2',
+    borderColor: 'border-black',
+    shadow: 'pixel-shadow',
+    inputBg: 'bg-[#ffffff]',
+    
+    // Layout specifics
+    sidebarBorder: 'border-r-4 border-black',
+    headerBorder: 'border-b-4 border-black',
+    card: 'border-4 border-black bg-[#FFF8E7] pixel-shadow',
+    button: 'border-2 border-black pixel-shadow active:translate-x-[2px] active:translate-y-[2px] active:shadow-none uppercase tracking-widest font-bold'
   },
-  [Theme.FESTIVAL]: {
-    bg: 'bg-[#2a0a0a]',
-    text: 'text-[#ffd700]',
-    primary: 'bg-[#ff0000]', // Red
-    secondary: 'bg-[#4a0e0e]',
-    border: 'border-[#ffd700]',
-    accent: 'text-[#00ff00]',
-    inputBg: 'bg-[#3d1010]'
+
+  // MODERN: Clean, Rounded, Subtle Borders, Blur, Sans-Serif
+  [Theme.MODERN_DARK]: {
+    type: 'modern',
+    bg: 'bg-[#09090b]', // Zinc 950
+    text: 'text-[#FAFAFA]', // Zinc 50
+    textMuted: 'text-[#A1A1AA]', // Zinc 400
+    primary: 'bg-[#3b82f6] hover:bg-[#2563eb]', // Blue 500
+    primaryText: 'text-white',
+    secondary: 'bg-[#18181b] hover:bg-[#27272a]', // Zinc 900
+    secondaryText: 'text-[#FAFAFA]',
+    accent: 'text-[#60A5FA]', // Blue 400
+    border: 'border-[#27272a]',
+    
+    // Structural
+    font: 'font-sans',
+    radius: 'rounded-xl',
+    borderWidth: 'border',
+    borderColor: 'border-[#27272a]', // Zinc 800
+    shadow: 'shadow-lg shadow-black/50',
+    inputBg: 'bg-[#18181b]',
+    
+    // Layout specifics
+    sidebarBorder: 'border-r border-[#27272a]',
+    headerBorder: 'border-b border-[#27272a] backdrop-blur-md bg-[#09090b]/80',
+    card: 'border border-[#27272a] bg-[#18181b] shadow-xl',
+    button: 'rounded-lg font-medium transition-all duration-200 active:scale-95'
   },
-  [Theme.MOONLIGHT]: {
-    bg: 'bg-[#050b14]',
-    text: 'text-[#e0f7fa]',
-    primary: 'bg-[#4fc3f7]', // Light Blue
-    secondary: 'bg-[#0d1b2a]',
-    border: 'border-[#81d4fa]',
-    accent: 'text-[#b3e5fc]',
-    inputBg: 'bg-[#1c2e4a]'
+  [Theme.MODERN_LIGHT]: {
+    type: 'modern',
+    bg: 'bg-[#ffffff]', // White
+    text: 'text-[#0f172a]', // Slate 900
+    textMuted: 'text-[#64748b]', // Slate 500
+    primary: 'bg-[#2563eb] hover:bg-[#1d4ed8]', // Blue 600
+    primaryText: 'text-white',
+    secondary: 'bg-[#f1f5f9] hover:bg-[#e2e8f0]', // Slate 100
+    secondaryText: 'text-[#334155]',
+    accent: 'text-[#2563eb]', // Blue 600
+    border: 'border-[#e2e8f0]',
+    
+    // Structural
+    font: 'font-sans',
+    radius: 'rounded-xl',
+    borderWidth: 'border',
+    borderColor: 'border-[#e2e8f0]', // Slate 200
+    shadow: 'shadow-sm',
+    inputBg: 'bg-white',
+    
+    // Layout specifics
+    sidebarBorder: 'border-r border-[#e2e8f0]',
+    headerBorder: 'border-b border-[#e2e8f0] backdrop-blur-md bg-white/80',
+    card: 'border border-[#e2e8f0] bg-white shadow-lg shadow-slate-200/50',
+    button: 'rounded-lg font-medium transition-all duration-200 active:scale-95 shadow-sm'
   },
-  [Theme.CYBERPUNK]: {
-    bg: 'bg-[#050510]', // Deep Space
-    text: 'text-[#D1F7FF]', // Holo Blue
-    primary: 'bg-[#FF2A6D]', // Radical Red/Pink
-    secondary: 'bg-[#2D1B4E]', // Deep Indigo/Purple (More colorful than gray)
-    border: 'border-[#05D9E8]', // Fluorescent Cyan
-    accent: 'text-[#00FF9F]', // Matrix Green
-    inputBg: 'bg-[#000000]'
+
+  // DIGITAL CLAY: Warm, Earthy, Tactile, Minimalist
+  [Theme.CLAY]: {
+    type: 'modern',
+    bg: 'bg-[#F5F2EB]', // Bone White
+    text: 'text-[#2C2C2A]', // Charcoal
+    textMuted: 'text-[#666461]', // Muted Charcoal
+    primary: 'bg-[#BC5D41] hover:bg-[#A04A30]', // Burnt Sienna
+    primaryText: 'text-[#F5F2EB]', // Light cream text on red button
+    secondary: 'bg-[#EBE7DF] hover:bg-[#E0DCD4]', // Warm Grey Surface
+    secondaryText: 'text-[#2C2C2A]',
+    accent: 'text-[#7A8B74]', // Sage Green
+    border: 'border-[#D8D2C4]', // Clay Trace
+    
+    // Structural
+    font: 'font-sans',
+    radius: 'rounded-2xl', // More rounded for clay feel
+    borderWidth: 'border',
+    borderColor: 'border-[#D8D2C4]', 
+    shadow: 'shadow-sm', // Minimal shadow
+    inputBg: 'bg-[#FDFCF8]', // Very light cream
+    
+    // Layout specifics
+    sidebarBorder: 'border-r border-[#D8D2C4]',
+    headerBorder: 'border-b border-[#D8D2C4] bg-[#F5F2EB]/90 backdrop-blur-sm',
+    card: 'border border-[#D8D2C4] bg-[#EBE7DF] shadow-md shadow-[#D8D2C4]/50', // Soft tactile shadow
+    button: 'rounded-2xl font-medium tracking-wide transition-transform active:scale-95 shadow-sm'
+  },
+
+  // BIOLUMINESCENCE: Deep Sea, High Contrast Neon, Glowing
+  [Theme.BIOLUMINESCENCE]: {
+    type: 'modern',
+    bg: 'bg-[#030712]', // Abyssal Blue (Almost Black)
+    text: 'text-[#f1f5f9]', // Cold White
+    textMuted: 'text-[#94a3b8]', // Slate 400
+    primary: 'bg-[#06b6d4] hover:bg-[#22d3ee] shadow-[0_0_15px_rgba(6,182,212,0.4)]', // Electric Cyan with Glow
+    primaryText: 'text-[#030712] font-bold', // Dark text on bright button for contrast
+    secondary: 'bg-[#0f172a] hover:bg-[#1e293b]', // Deep Blue Surface
+    secondaryText: 'text-[#f1f5f9]',
+    accent: 'text-[#8b5cf6]', // Coral Purple
+    border: 'border-[#1e293b]', // Faint Blue Border
+    
+    // Structural
+    font: 'font-mono', // Tech/Console feel
+    radius: 'rounded-md', // Technical look
+    borderWidth: 'border',
+    borderColor: 'border-[#1e293b]',
+    shadow: 'shadow-[0_0_10px_rgba(6,182,212,0.1)]', // Ambient Glow
+    inputBg: 'bg-[#0b1221]', // Darker abyss
+    
+    // Layout specifics
+    sidebarBorder: 'border-r border-[#1e293b]',
+    headerBorder: 'border-b border-[#1e293b] bg-[#030712]/90 backdrop-blur',
+    card: 'border border-[#1e293b] bg-[#0f172a] shadow-[0_0_15px_rgba(6,182,212,0.05)]',
+    button: 'rounded-md font-bold uppercase tracking-wider transition-all hover:shadow-[0_0_20px_rgba(6,182,212,0.6)]'
   }
 };
 
@@ -134,25 +249,25 @@ export const MASCOT_COMMENTS: Record<Language, string[]> = {
 
 export const TRANSLATIONS = {
   en: {
-    currentChatModel: "CURRENT CHAT MODEL",
+    currentChatModel: "Current Model",
     noChatModels: "No Chat Models Available",
-    configLlms: "CONFIG",
+    configLlms: "Config",
     history: "HISTORY",
-    newChat: "NEW CHAT",
-    noModelSelected: "NO MODEL SELECTED",
+    newChat: "New Chat",
+    noModelSelected: "No Model Selected",
     online: "ONLINE",
     searchPlaceholder: "Search...",
-    selectModelStart: "SELECT A MODEL TO START",
-    noMessagesFound: "NO MESSAGES FOUND",
-    generating: "GENERATING",
-    stop: "STOP",
-    send: "SEND",
-    llmConfig: "LLM CONFIGURATION",
-    close: "CLOSE",
-    providers: "PROVIDERS",
-    models: "MODELS",
-    aceAgent: "ACE AGENT",
-    aceConfigTitle: "ACE CONFIGURATION",
+    selectModelStart: "Select a model to start",
+    noMessagesFound: "No messages found",
+    generating: "Generating",
+    stop: "Stop",
+    send: "Send",
+    llmConfig: "Settings",
+    close: "Close",
+    providers: "Providers",
+    models: "Models",
+    aceAgent: "ACE Agent",
+    aceConfigTitle: "ACE Configuration",
     aceConfigDesc: "Configure the specialized agents for the ACE workflow.",
     fastModel: "1. Fast Model (Quick Reasoning)",
     reflectorModel: "2. Reflector Model (Critique & Improve)",
@@ -161,68 +276,69 @@ export const TRANSLATIONS = {
     reflectorModelDesc: "Analyzes outputs and suggests improvements or corrections.",
     curatorModelDesc: "Synthesizes the final response from multiple generated drafts.",
     aceNote: "Note: ACE workflows require all three models to be configured for optimal performance.",
-    saveConfig: "SAVE CONFIG",
-    configSaved: "CONFIGURATION SAVED!",
+    saveConfig: "Save Config",
+    configSaved: "Configuration Saved!",
     selectProvider: "Select Provider...",
     selectModel: "Select Chat Model...",
     noModelsConfigured: "No models configured.",
-    addProvider: "ADD PROVIDER",
-    addModel: "ADD MODEL",
+    addProvider: "Add Provider",
+    addModel: "Add Model",
     name: "Name",
     type: "Type",
     apiBaseUrl: "API Base URL",
     apiKey: "API Key",
-    saveProvider: "SAVE PROVIDER",
-    updateProvider: "UPDATE PROVIDER",
+    saveProvider: "Save Provider",
+    updateProvider: "Update Provider",
     displayName: "Display Name",
     modelId: "Model ID (API)",
     context: "Context (Tokens)",
     maxOutput: "Max Output",
     temp: "Temp (0-1)",
     dimensions: "Dimensions",
-    testModel: "TEST MODEL",
-    testing: "TESTING...",
-    success: "SUCCESS!",
+    testModel: "Test Model",
+    testing: "Testing...",
+    success: "Success!",
     modelVerified: "Model Verified!",
     consecutiveTests: "Consecutive Tests",
-    warning: "WARNING",
+    warning: "Warning",
     confirmModify: "Confirm Modification?",
     confirmModifyDesc: "This modification will affect the Agent's self-learning ability.",
-    cancel: "CANCEL (NO)",
-    confirm: "CONFIRM (YES)",
-    themeDay: "DAY",
-    themeNight: "NIGHT",
-    themeFest: "FEST",
-    themeCyber: "CYBER",
-    themeMoon: "MOON",
+    cancel: "Cancel",
+    confirm: "Confirm",
+    themeDay: "Pixel (Day)",
+    themeNight: "Pixel (Night)",
+    themeModernDay: "Modern (Day)",
+    themeModernNight: "Modern (Night)",
+    themeClay: "Digital Clay",
+    themeBiolum: "Bioluminescence",
     session: "Session",
-    deleteSessionTitle: "DELETE SESSION?",
+    deleteSessionTitle: "Delete Session?",
     deleteSessionConfirm: "Are you sure?",
-    deleteSessionDesc: "This conversation history will be lost forever in the void.",
-    deleteAction: "DELETE",
+    deleteSessionDesc: "This conversation history will be lost forever.",
+    deleteAction: "Delete",
     thinkingProcess: "Thinking Process",
     expand: "Show",
     collapse: "Hide",
     interrupted: "[Interrupted]",
     deepThinking: "Deep Thinking",
-    changeTheme: "Change Theme",
-    changeLanguage: "Change Language",
-    mascotConfig: "MASCOT",
+    changeTheme: "Theme",
+    changeLanguage: "Language",
+    mascotConfig: "Mascot",
     mascotSystemPrompt: "Mascot System Prompt",
     mascotPromptPlaceholder: "Enter custom persona instruction for the mascot...",
     // New Translations
-    default: "DEFAULT",
-    setAsDefault: "Set as Default Model",
-    testConnection: "TEST CONNECTION",
-    connectionSuccess: "CONNECTION SUCCESSFUL",
-    connectionFailed: "CONNECTION FAILED",
+    default: "Default",
+    setAsDefault: "Set as Default",
+    testConnection: "Test Connection",
+    connectionSuccess: "Connected",
+    connectionFailed: "Connection Failed",
     latency: "Latency",
     deleteProviderConfirm: "Delete this provider?",
     deleteModelConfirm: "Delete this model?",
     saveFailed: "Failed to save. Ensure backend is running.",
-    editProvider: "EDIT PROVIDER",
-    editModel: "EDIT MODEL",
-    launch: "LAUNCH!"
+    editProvider: "Edit Provider",
+    editModel: "Edit Model",
+    launch: "Launch!"
   },
   zh: {
     currentChatModel: "当前对话模型",
@@ -279,13 +395,14 @@ export const TRANSLATIONS = {
     warning: "警告",
     confirmModify: "是否确认修改？",
     confirmModifyDesc: "此项修改会影响 Agent 自我学习能力。",
-    cancel: "取消 (NO)",
-    confirm: "确认 (YES)",
-    themeDay: "白昼",
-    themeNight: "黑夜",
-    themeFest: "庆典",
-    themeCyber: "赛博",
-    themeMoon: "月光",
+    cancel: "取消",
+    confirm: "确认",
+    themeDay: "像素 (白昼)",
+    themeNight: "像素 (黑夜)",
+    themeModernDay: "现代 (白昼)",
+    themeModernNight: "现代 (黑夜)",
+    themeClay: "数字陶土",
+    themeBiolum: "深海光",
     session: "会话",
     deleteSessionTitle: "删除会话？",
     deleteSessionConfirm: "确认删除？",
@@ -370,13 +487,14 @@ export const TRANSLATIONS = {
     warning: "警告",
     confirmModify: "変更を確認しますか？",
     confirmModifyDesc: "この変更はエージェントの自己学習能力に影響します。",
-    cancel: "キャンセル (NO)",
-    confirm: "確認 (YES)",
-    themeDay: "昼",
-    themeNight: "夜",
-    themeFest: "祭",
-    themeCyber: "電脳",
-    themeMoon: "月光",
+    cancel: "キャンセル",
+    confirm: "確認",
+    themeDay: "ピクセル (昼)",
+    themeNight: "ピクセル (夜)",
+    themeModernDay: "モダン (昼)",
+    themeModernNight: "モダン (夜)",
+    themeClay: "デジタルクレイ",
+    themeBiolum: "深海光",
     session: "セッション",
     deleteSessionTitle: "セッション削除？",
     deleteSessionConfirm: "本当に削除しますか？",

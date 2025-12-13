@@ -2,9 +2,10 @@
 export enum Theme {
   DARK = 'dark',
   LIGHT = 'light',
-  FESTIVAL = 'festival',
-  MOONLIGHT = 'moonlight',
-  CYBERPUNK = 'cyberpunk'
+  MODERN_DARK = 'modern_dark',
+  MODERN_LIGHT = 'modern_light',
+  CLAY = 'clay',
+  BIOLUMINESCENCE = 'bioluminescence'
 }
 
 export type Language = 'en' | 'zh' | 'ja';

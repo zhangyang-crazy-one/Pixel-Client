@@ -6,7 +6,7 @@ import { PixelButton, PixelSelect, PixelCard } from './components/PixelUI';
 import { ModelManager } from './components/ModelManager';
 import { Chat } from './components/Chat';
 import { Mascot } from './components/Mascot';
-import { Settings, Search, ChevronLeft, ChevronRight, Trash2, RefreshCcw, AlertCircle, AlertTriangle, MessageSquare, MessageSquareOff } from 'lucide-react';
+import { Settings, Search, ChevronLeft, ChevronRight, Trash2, RefreshCcw, AlertCircle, MessageSquare, MessageSquareOff } from 'lucide-react';
 import { ApiClient } from './services/apiClient';
 import { streamChatResponse, fetchMascotComment } from './services/llmService';
 
@@ -31,7 +31,7 @@ const App: React.FC = () => {
   const [isStreaming, setIsStreaming] = useState(false);
   const [currentRequestId, setCurrentRequestId] = useState<string | null>(null);
   
-  // Abort Controller for immediate client-side stop
+  // Abort Controller
   const abortControllerRef = useRef<AbortController | null>(null);
   const initRef = useRef(false);
 
@@ -42,19 +42,16 @@ const App: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mascotState, setMascotState] = useState<'idle' | 'thinking' | 'happy' | 'shocked'>('idle');
   const [mascotComment, setMascotComment] = useState<string | null>(null);
-  const [isMascotEnabled, setIsMascotEnabled] = useState(true); // Toggle for Mascot speech
+  const [isMascotEnabled, setIsMascotEnabled] = useState(true);
 
   const [searchQuery, setSearchQuery] = useState('');
-  
-  // Easter Egg States
   const [rainbowMode, setRainbowMode] = useState(false);
-  const [isMoonlightUnlocked, setIsMoonlightUnlocked] = useState(false);
 
   const styles = THEME_STYLES[theme];
   const t = TRANSLATIONS[language];
+  const isModern = styles.type === 'modern';
 
   // --- Effects ---
-  // Initial Data Fetch
   useEffect(() => {
     if (initRef.current) return;
     initRef.current = true;
@@ -66,10 +63,7 @@ const App: React.FC = () => {
             const fetchedModels = await ApiClient.getAllModels();
             setModels(fetchedModels);
             
-            // Check if backend seems offline (empty arrays often indicate connection failure in this setup)
             if (fetchedProviders.length === 0 && fetchedModels.length === 0) {
-                 // We don't set isBackendOffline=true strictly here as it might just be a fresh install
-                 // But we can log a warning
                  console.warn("No providers found. Backend might be offline or unconfigured.");
             }
 
@@ -87,29 +81,22 @@ const App: React.FC = () => {
     initData();
   }, []);
 
-  // Fetch history when session changes
   useEffect(() => {
     const loadHistory = async () => {
         if (!activeSessionId) return;
-        
-        // Use the new getSessionMessages endpoint
         const fetchedMessages = await ApiClient.getSessionMessages(activeSessionId);
-        
-        // If API returns messages, set them. Otherwise start fresh.
         setMessages(fetchedMessages || []);
     };
     loadHistory();
   }, [activeSessionId]);
 
   const refreshSessions = async () => {
-      // Pass -1 to get all sessions without time limit
       const apiSessions = await ApiClient.getActiveSessions(-1);
-      // Map API sessions to ChatSession type
       const mappedSessions: ChatSession[] = apiSessions.map(s => ({
           id: s.sessionId,
           title: `Session ${s.sessionId.substring(0,6)}`,
           lastUpdated: s.lastActivityAt,
-          messages: [] // Messages are loaded on select
+          messages: []
       }));
       setSessions(mappedSessions);
       if (mappedSessions.length > 0 && !activeSessionId) {
@@ -132,86 +119,36 @@ const App: React.FC = () => {
       setMessages([]);
   };
 
-  // --- Derived State ---
-  // Filter models for the chat dropdown (only chat/nlp models)
   const chatModels = models.filter(m => m.type === 'chat' || m.type === 'nlp' as any || !m.type);
-
   const activeModel = models.find(m => m.id === activeModelId) || null;
   const activeProvider = activeModel ? providers.find(p => p.id === activeModel.providerId) || null : null;
 
-  // Ensure activeModelId points to a valid chat model if the current one is deleted
   useEffect(() => {
     if (chatModels.length > 0) {
        const currentExists = chatModels.some(m => m.id === activeModelId);
-       if (!currentExists) {
-           setActiveModelId(chatModels[0].id);
-       }
+       if (!currentExists) setActiveModelId(chatModels[0].id);
     } else {
         if (activeModelId !== '') setActiveModelId('');
     }
   }, [models, activeModelId]);
 
-  // Dynamic Mascot Commentary Logic (Bound to simple-stream)
   useEffect(() => {
     if (messages.length === 0) return;
-    
-    // Check if mascot is enabled
     if (!isMascotEnabled) return;
-
-    // 30% chance to trigger a comment when messages update
-    // Ensure we have an active model to use for generation
     if (Math.random() < 0.3 && !mascotComment && activeModel) {
         const fetchComment = async () => {
-            // Retrieve system prompt from local storage
             const systemPrompt = localStorage.getItem('pixel_mascot_system_prompt') || '';
-            
-            // Pass current message history (will be sliced to 20 in service)
-            // Use the currently selected model's API ID (e.g. gpt-4)
             const comment = await fetchMascotComment(messages, activeModel.modelId, systemPrompt);
-            if (comment) {
-                setMascotComment(comment);
-            }
+            if (comment) setMascotComment(comment);
         };
         fetchComment();
     }
   }, [messages.length, activeModel, isMascotEnabled]);
 
-  // Handle mascot speech end with useCallback to prevent re-renders breaking the effect
   const handleMascotSpeechEnd = useCallback(() => {
     setMascotComment(null);
   }, []);
 
-  // Achievement: Daily Streak Checker
-  useEffect(() => {
-    const today = new Date().toDateString();
-    const lastLogin = localStorage.getItem('pixel_last_login');
-    const streakStr = localStorage.getItem('pixel_streak');
-    let streak = streakStr ? parseInt(streakStr) : 0;
-
-    if (lastLogin !== today) {
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
-        
-        if (lastLogin === yesterday.toDateString()) {
-            streak++;
-        } else {
-            streak = 1; // Reset if missed a day
-        }
-        localStorage.setItem('pixel_last_login', today);
-        localStorage.setItem('pixel_streak', streak.toString());
-    }
-
-    if (streak >= 30) {
-        setIsMoonlightUnlocked(true);
-        if (localStorage.getItem('pixel_moonlight_notified') !== 'true') {
-             alert("🏆 ACHIEVEMENT UNLOCKED: [PIXEL MOONLIGHT] THEME!\n\nYou have used PixelVerse for 30 days in a row.");
-             localStorage.setItem('pixel_moonlight_notified', 'true');
-        }
-    }
-  }, []);
-
-  // --- Handlers ---
-  
   const handleRainbowTrigger = () => {
       setRainbowMode(prev => !prev);
       setMascotState('shocked');
@@ -248,7 +185,6 @@ const App: React.FC = () => {
 
   const confirmDeleteSession = async () => {
       if (!sessionToDelete) return;
-      
       try {
           await ApiClient.deleteSession(sessionToDelete);
           const newSessions = sessions.filter(s => s.id !== sessionToDelete);
@@ -266,26 +202,15 @@ const App: React.FC = () => {
   };
 
   const handleStopGeneration = async () => {
-      // 1. Client-side abort (Immediate stop of fetch)
       if (abortControllerRef.current) {
           abortControllerRef.current.abort();
           abortControllerRef.current = null;
       }
-
-      // 2. Server-side interrupt (Tell backend to stop processing)
       if (currentRequestId) {
-          try {
-            await ApiClient.interruptRequest(currentRequestId);
-          } catch(e) {
-              console.error("Failed to interrupt", e);
-          }
+          try { await ApiClient.interruptRequest(currentRequestId); } catch(e) { console.error("Failed to interrupt", e); }
       }
-
-      // 3. UI Update (Immediate visual feedback)
       setIsStreaming(false);
       setCurrentRequestId(null);
-      
-      // Append [Interrupted] prompt to the last message if it's from assistant
       setMessages(prev => {
           const last = prev[prev.length - 1];
           if (last && last.role === 'assistant') {
@@ -299,104 +224,81 @@ const App: React.FC = () => {
       });
   };
 
-  // Main Chat Handler
   const handleSendMessage = async (msg: Message, options?: { deepThinkingEnabled: boolean }) => {
      if (msg.role === 'assistant') {
          setMessages(prev => [...prev, msg]);
          return; 
      }
-
-     // 1. Add User Message
      setMessages(prev => [...prev, msg]);
      setIsStreaming(true);
      setMascotState('thinking');
-     
      if (!activeModel || !activeProvider) {
          setIsStreaming(false);
          return;
      }
-
      const botMsgId = (Date.now() + 1).toString();
-     
-     // 2. Add Empty Assistant Message Immediately (Loading State)
      const botMsg: Message = {
-         id: botMsgId,
-         role: 'assistant',
-         content: '', // Empty content triggers "Thinking" UI in Chat.tsx
-         timestamp: Date.now() + 1
+         id: botMsgId, role: 'assistant', content: '', timestamp: Date.now() + 1
      };
      setMessages(prev => [...prev, botMsg]);
 
-     // 3. Setup AbortController for this request
      const ac = new AbortController();
      abortControllerRef.current = ac;
-
      let fullContent = '';
 
      await streamChatResponse(
-         [...messages, msg], // Pass history
-         activeModel, 
-         activeProvider, 
+         [...messages, msg], activeModel, activeProvider, 
          (chunk) => {
             fullContent += chunk;
             handleUpdateMessage(botMsgId, fullContent);
          },
-         (requestId) => {
-             setCurrentRequestId(requestId);
-         },
-         activeSessionId,
-         ac.signal,
-         options?.deepThinkingEnabled
+         (requestId) => setCurrentRequestId(requestId),
+         activeSessionId, ac.signal, options?.deepThinkingEnabled
      );
 
-     // Only clean up if we weren't aborted (streaming is still true)
-     // If aborted, handleStopGeneration takes care of state
      if (abortControllerRef.current === ac) {
          setIsStreaming(false);
          setCurrentRequestId(null);
          setMascotState('happy');
          setTimeout(() => setMascotState('idle'), 2000);
-         refreshSessions(); // Update timestamps
+         refreshSessions();
          abortControllerRef.current = null;
      }
   };
 
-  // --- Loading Screen ---
   if (isLoading) {
       return (
           <div className={`fixed inset-0 z-50 flex items-center justify-center ${styles.bg} ${styles.text} flex-col gap-4`}>
                <Mascot theme={theme} state="thinking" className="w-32 h-32 animate-bounce" />
                <div className="text-2xl font-bold animate-pulse tracking-widest">INITIALIZING PIXELVERSE...</div>
-               <div className="text-sm opacity-50 font-mono">Establishing Neural Link...</div>
           </div>
       );
   }
 
+  // Determine root class for scrollbars and fonts
+  const rootThemeClass = styles.type === 'pixel' ? 'theme-pixel' : 'theme-modern';
+
   return (
-    <div className={`flex h-screen w-screen overflow-hidden ${styles.bg} ${styles.text} transition-colors duration-500 scanline-effect ${rainbowMode ? 'rainbow-mode' : ''}`}>
+    <div className={`
+      flex h-screen w-screen overflow-hidden ${styles.bg} ${styles.text} transition-colors duration-500 
+      ${!isModern ? 'scanline-effect' : ''} 
+      ${rainbowMode ? 'rainbow-mode' : ''}
+      ${styles.font} ${rootThemeClass}
+    `}>
       
-      {/* DELETE CONFIRMATION DIALOG */}
       {showDeleteDialog && (
         <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 backdrop-blur-sm">
-            <PixelCard theme={theme} className={`w-[90%] max-w-[350px] ${styles.bg} ${styles.text} flex flex-col gap-4 border-4 border-red-500 animate-float`}>
-                <div className="flex items-center gap-2 text-red-500 font-bold text-xl border-b-2 border-black pb-2">
+            <PixelCard theme={theme} className={`w-[90%] max-w-[350px] flex flex-col gap-4 ${styles.borderColor} animate-float`}>
+                <div className="flex items-center gap-2 text-red-500 font-bold text-xl border-b pb-2 border-current">
                     <Trash2 /> {t.deleteSessionTitle}
                 </div>
                 <div className="py-2">
-                    <p className="font-bold text-lg leading-tight mb-2">
-                        {t.deleteSessionConfirm}
-                    </p>
-                    <p className="text-sm opacity-80">
-                        {t.deleteSessionDesc}
-                    </p>
+                    <p className="font-bold text-lg leading-tight mb-2">{t.deleteSessionConfirm}</p>
+                    <p className="text-sm opacity-80">{t.deleteSessionDesc}</p>
                 </div>
                 <div className="flex justify-end gap-4 mt-2">
-                    <PixelButton theme={theme} variant="secondary" onClick={() => setShowDeleteDialog(false)}>
-                        {t.cancel}
-                    </PixelButton>
-                    <PixelButton theme={theme} variant="danger" onClick={confirmDeleteSession}>
-                        {t.deleteAction}
-                    </PixelButton>
+                    <PixelButton theme={theme} variant="secondary" onClick={() => setShowDeleteDialog(false)}>{t.cancel}</PixelButton>
+                    <PixelButton theme={theme} variant="danger" onClick={confirmDeleteSession}>{t.deleteAction}</PixelButton>
                 </div>
             </PixelCard>
         </div>
@@ -404,17 +306,16 @@ const App: React.FC = () => {
 
       {/* Sidebar */}
       <div className={`
-        ${sidebarOpen ? 'w-64 border-r-4' : 'w-0 border-r-0'} 
-        transition-all duration-300 border-black flex flex-col
-        ${styles.secondary} relative z-20 overflow-hidden whitespace-nowrap
+        ${sidebarOpen ? 'w-64' : 'w-0'} 
+        ${styles.sidebarBorder} flex flex-col
+        ${styles.secondary} relative z-20 overflow-hidden whitespace-nowrap transition-all duration-300
       `}>
-        <div className={`p-4 border-b-4 border-black flex justify-between items-center min-h-[60px]`}>
+        <div className={`p-4 ${styles.headerBorder} flex justify-between items-center min-h-[60px]`}>
             <h1 className={`text-2xl font-bold ${styles.text} tracking-tighter`}>PixelVerse</h1>
         </div>
 
-        {/* Model Selector */}
-        <div className="p-4 border-b-2 border-black space-y-2">
-            <label className={`text-xs font-bold ${styles.text}`}>{t.currentChatModel}</label>
+        <div className={`p-4 ${styles.headerBorder} space-y-2`}>
+            <label className={`text-xs font-bold ${styles.textMuted}`}>{t.currentChatModel}</label>
             <PixelSelect 
                 theme={theme} 
                 value={activeModelId} 
@@ -422,19 +323,16 @@ const App: React.FC = () => {
                 className="text-sm"
             >
                 {chatModels.length === 0 && <option value="">{t.noChatModels}</option>}
-                {chatModels.map(m => (
-                    <option key={m.id} value={m.id}>{m.name}</option>
-                ))}
+                {chatModels.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
             </PixelSelect>
             <PixelButton theme={theme} variant="primary" className="w-full text-xs" onClick={() => setIsModelManagerOpen(true)}>
                 <Settings size={12} /> {t.configLlms}
             </PixelButton>
         </div>
 
-        {/* History List */}
         <div className="flex-1 overflow-y-auto p-2 space-y-2">
-            <div className="flex justify-between items-center px-2 py-1 opacity-50">
-                <span className="text-xs">- {t.history} -</span>
+            <div className={`flex justify-between items-center px-2 py-1 ${styles.textMuted}`}>
+                <span className="text-xs font-bold uppercase tracking-wider">{t.history}</span>
                 <button onClick={refreshSessions} title="Refresh"><RefreshCcw size={12}/></button>
             </div>
             <PixelButton theme={theme} variant="primary" className="w-full text-xs mb-2" onClick={createNewSession}>
@@ -446,8 +344,9 @@ const App: React.FC = () => {
                     key={session.id} 
                     onClick={() => setActiveSessionId(session.id)}
                     className={`
-                        p-2 border-2 border-black cursor-pointer text-sm truncate flex justify-between items-center group
-                        ${activeSessionId === session.id ? 'bg-black/10' : 'hover:bg-black/5'}
+                        p-2 ${styles.borderWidth} ${styles.borderColor} cursor-pointer text-sm truncate flex justify-between items-center group
+                        ${styles.radius}
+                        ${activeSessionId === session.id ? 'bg-black/10 font-bold' : 'hover:bg-black/5'}
                         ${styles.text}
                     `}
                 >
@@ -462,21 +361,18 @@ const App: React.FC = () => {
             ))}
         </div>
 
-        {/* Mascot Area (Bottom of Sidebar) */}
         <div className="p-2 pb-8 flex items-end justify-center relative">
             <Mascot 
                 theme={theme} 
                 state={mascotState} 
-                className="w-32 h-32"
+                className={`w-32 h-32 ${isModern ? 'opacity-90 grayscale-[0.2]' : ''}`}
                 speechText={mascotComment}
                 onSpeechEnd={handleMascotSpeechEnd}
             />
-            
-            {/* Mascot Toggle Button */}
             <button 
                 onClick={() => setIsMascotEnabled(!isMascotEnabled)}
                 className={`
-                    absolute bottom-4 right-4 p-1.5 rounded-sm border-2 border-black shadow-[2px_2px_0px_rgba(0,0,0,1)]
+                    absolute bottom-4 right-4 p-1.5 ${styles.radius} ${styles.borderWidth} ${styles.borderColor} ${styles.shadow}
                     transition-all active:translate-y-0.5 active:shadow-none
                     ${isMascotEnabled ? 'bg-green-400 text-black' : 'bg-gray-400 text-gray-700'}
                 `}
@@ -487,12 +383,9 @@ const App: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Content */}
       <div className="flex-1 flex flex-col relative z-10 h-full">
-         {/* Top Bar */}
-         <div className={`h-14 min-h-[56px] border-b-4 border-black flex items-center px-4 justify-between ${styles.secondary}`}>
+         <div className={`h-14 min-h-[56px] ${styles.headerBorder} flex items-center px-4 justify-between ${styles.secondary}`}>
              <div className="flex items-center gap-4">
-                {/* Integrated Toggle Button */}
                 <PixelButton 
                   theme={theme} 
                   variant="secondary" 
@@ -506,12 +399,12 @@ const App: React.FC = () => {
 
                 <span className={`font-bold ${styles.text} uppercase flex items-center gap-2 truncate`}>
                    {activeProvider?.icon} {activeModel?.name || t.noModelSelected}
-                   {activeModel && <span className={`text-xs px-2 py-0.5 border border-black bg-green-400 text-black`}>{t.online}</span>}
+                   {activeModel && <span className={`text-xs px-2 py-0.5 ${styles.borderWidth} ${styles.borderColor} ${styles.radius} bg-green-400 text-black`}>{t.online}</span>}
                 </span>
              </div>
              <div className="flex gap-2">
                  {isBackendOffline && (
-                    <div className="flex items-center gap-2 text-xs font-bold text-red-500 border-2 border-red-500 px-2 py-1 animate-pulse bg-red-100">
+                    <div className="flex items-center gap-2 text-xs font-bold text-red-500 border-2 border-red-500 px-2 py-1 animate-pulse bg-red-100 rounded">
                         <AlertCircle size={14} /> API OFFLINE
                     </div>
                  )}
@@ -522,9 +415,9 @@ const App: React.FC = () => {
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className={`
-                            pl-8 pr-2 py-1 border-2 border-black text-sm w-48 font-chat 
-                            ${styles.inputBg} ${styles.text} placeholder-opacity-50 outline-none
-                            focus:shadow-[2px_2px_0px_rgba(0,0,0,0.2)] transition-shadow
+                            pl-8 pr-2 py-1 ${styles.borderWidth} ${styles.borderColor} text-sm w-48 
+                            ${styles.inputBg} ${styles.text} ${styles.radius} placeholder-opacity-50 outline-none
+                            focus:shadow-md transition-shadow
                         `} 
                      />
                      <Search className={`absolute left-2 top-1.5 w-4 h-4 opacity-50 ${styles.text}`} />
@@ -532,7 +425,6 @@ const App: React.FC = () => {
              </div>
          </div>
 
-         {/* Chat Container */}
          <div className="flex-1 overflow-hidden bg-white/5 relative">
              <Chat 
                 theme={theme}
@@ -546,7 +438,7 @@ const App: React.FC = () => {
                 onTriggerRainbow={handleRainbowTrigger}
                 setTheme={setTheme}
                 setLanguage={setLanguage}
-                isMoonlightUnlocked={isMoonlightUnlocked}
+                isMoonlightUnlocked={false}
                 searchQuery={searchQuery}
                 onStop={handleStopGeneration}
                 isStreaming={isStreaming}
@@ -554,7 +446,6 @@ const App: React.FC = () => {
          </div>
       </div>
 
-      {/* Global Modals */}
       {isModelManagerOpen && (
         <ModelManager 
             theme={theme}
@@ -568,7 +459,6 @@ const App: React.FC = () => {
             onClose={() => setIsModelManagerOpen(false)}
         />
       )}
-
     </div>
   );
 };

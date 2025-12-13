@@ -25,7 +25,7 @@ const MascotComponent: React.FC<MascotProps> = ({ theme, state: appState, speech
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   
-  const isCyberpunk = theme === Theme.CYBERPUNK;
+  const isCyberpunk = theme === Theme.DARK;
 
   // Palette - Dynamic based on theme
   const colors = isCyberpunk ? {
