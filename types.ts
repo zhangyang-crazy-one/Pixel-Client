@@ -16,7 +16,7 @@ export interface Message {
   content: string;
   timestamp: number;
   modelId?: string;
-  attachments?: string[]; // URLs to simulated attachments
+  attachments?: string[]; // Base64 data URLs
 }
 
 export interface ChatSession {
@@ -49,7 +49,7 @@ export interface ProviderTestResponse {
   details?: any;
 }
 
-export type ModelType = 'chat' | 'embedding' | 'rerank';
+export type ModelType = 'chat' | 'embedding' | 'rerank' | 'multimodal';
 
 export interface LLMModel {
   id: string;

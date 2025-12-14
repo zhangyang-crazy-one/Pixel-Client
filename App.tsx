@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Theme, LLMProvider, LLMModel, Message, AceConfig, Language, ChatSession } from './types';
-import { INITIAL_ACE_CONFIG, THEME_STYLES, TRANSLATIONS } from './constants';
+import { INITIAL_ACE_CONFIG, THEME_STYLES, TRANSLATIONS, getProviderIcon } from './constants';
 import { PixelButton, PixelSelect, PixelCard } from './components/PixelUI';
 import { ModelManager } from './components/ModelManager';
 import { Chat } from './components/Chat';
@@ -68,7 +68,9 @@ const App: React.FC = () => {
             }
 
             if (fetchedModels.length > 0) {
-                setActiveModelId(fetchedModels[0].id);
+                // Find default model if any, else first
+                const defaultModel = fetchedModels.find(m => m.isDefault);
+                setActiveModelId(defaultModel ? defaultModel.id : fetchedModels[0].id);
             }
             await refreshSessions();
         } catch (e) {
@@ -119,7 +121,7 @@ const App: React.FC = () => {
       setMessages([]);
   };
 
-  const chatModels = models.filter(m => m.type === 'chat' || m.type === 'nlp' as any || !m.type);
+  const chatModels = models.filter(m => m.type === 'chat' || m.type === 'nlp' as any || !m.type || m.type === 'multimodal');
   const activeModel = models.find(m => m.id === activeModelId) || null;
   const activeProvider = activeModel ? providers.find(p => p.id === activeModel.providerId) || null : null;
 
@@ -338,95 +340,102 @@ const App: React.FC = () => {
             <PixelButton theme={theme} variant="primary" className="w-full text-xs mb-2" onClick={createNewSession}>
                 + {t.newChat}
             </PixelButton>
-            
             {sessions.map(session => (
                 <div 
-                    key={session.id} 
+                    key={session.id}
                     onClick={() => setActiveSessionId(session.id)}
                     className={`
-                        p-2 ${styles.borderWidth} ${styles.borderColor} cursor-pointer text-sm truncate flex justify-between items-center group
-                        ${styles.radius}
-                        ${activeSessionId === session.id ? 'bg-black/10 font-bold' : 'hover:bg-black/5'}
-                        ${styles.text}
+                        group relative p-2 cursor-pointer border-2 transition-all duration-200
+                        ${session.id === activeSessionId ? `${styles.primary} ${styles.primaryText} border-black` : `border-transparent hover:${styles.borderColor} hover:border-dashed`}
                     `}
                 >
-                    <span className="truncate w-32">{session.title}</span>
+                    <div className="text-sm font-bold truncate pr-6">{session.title}</div>
+                    <div className="text-[10px] opacity-60">{new Date(session.lastUpdated).toLocaleDateString()}</div>
+                    
                     <button 
                         onClick={(e) => handleDeleteSessionRequest(e, session.id)}
-                        className="opacity-0 group-hover:opacity-100 text-red-500 hover:bg-red-100 rounded p-1"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 hover:text-red-500 transition-opacity"
                     >
-                        <Trash2 size={12} />
+                        <Trash2 size={14} />
                     </button>
                 </div>
             ))}
         </div>
-
-        <div className="p-2 pb-8 flex items-end justify-center relative">
-            <Mascot 
-                theme={theme} 
-                state={mascotState} 
-                className={`w-32 h-32 ${isModern ? 'opacity-90 grayscale-[0.2]' : ''}`}
-                speechText={mascotComment}
-                onSpeechEnd={handleMascotSpeechEnd}
-            />
-            <button 
-                onClick={() => setIsMascotEnabled(!isMascotEnabled)}
-                className={`
-                    absolute bottom-4 right-4 p-1.5 ${styles.radius} ${styles.borderWidth} ${styles.borderColor} ${styles.shadow}
-                    transition-all active:translate-y-0.5 active:shadow-none
-                    ${isMascotEnabled ? 'bg-green-400 text-black' : 'bg-gray-400 text-gray-700'}
-                `}
-                title={isMascotEnabled ? "Mascot Speech: ON" : "Mascot Speech: OFF"}
-            >
-                {isMascotEnabled ? <MessageSquare size={14} /> : <MessageSquareOff size={14} />}
-            </button>
+        
+        {/* Connection Status Indicator in Sidebar Bottom */}
+        <div className={`p-2 text-[10px] text-center opacity-50 ${styles.headerBorder} border-t-2`}>
+             {isBackendOffline ? (
+                 <span className="text-red-500 flex items-center justify-center gap-1 font-bold">
+                     <AlertCircle size={10} /> BACKEND OFFLINE
+                 </span>
+             ) : (
+                 <span className="text-green-500 flex items-center justify-center gap-1 font-bold">
+                     <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span> SYSTEM READY
+                 </span>
+             )}
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col relative z-10 h-full">
-         <div className={`h-14 min-h-[56px] ${styles.headerBorder} flex items-center px-4 justify-between ${styles.secondary}`}>
-             <div className="flex items-center gap-4">
-                <PixelButton 
-                  theme={theme} 
-                  variant="secondary" 
-                  onClick={() => setSidebarOpen(!sidebarOpen)}
-                  className="!p-0 w-8 h-8 flex items-center justify-center shrink-0"
-                  style={{ padding: 0 }}
-                  title={sidebarOpen ? "Close Sidebar" : "Open Sidebar"}
-                >
-                    {sidebarOpen ? <ChevronLeft size={20} /> : <ChevronRight size={20} />}
-                </PixelButton>
+      {/* Main Chat Area */}
+      <div className={`flex-1 flex flex-col relative z-10 transition-all duration-300`}>
+        {/* Header */}
+        <div className={`
+            h-[60px] ${styles.headerBorder} flex items-center justify-between px-4 
+            ${styles.secondary} relative z-30
+        `}>
+           <div className="flex items-center gap-4">
+              <button onClick={() => setSidebarOpen(!sidebarOpen)} className="hover:opacity-70 transition-opacity">
+                  {sidebarOpen ? <ChevronLeft /> : <ChevronRight />}
+              </button>
+              
+              <div className="flex items-center gap-3">
+                  {activeModel ? (
+                    <>
+                        <div className="w-6 h-6 flex items-center justify-center">
+                            {activeProvider ? getProviderIcon(activeProvider.type) : getProviderIcon('custom')}
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="font-bold leading-none text-lg">{activeModel.name}</span>
+                            <span className="text-[10px] opacity-60 flex items-center gap-1 font-mono uppercase tracking-wider mt-0.5">
+                                <span className={`w-2 h-2 rounded-full ${isBackendOffline ? 'bg-red-500' : 'bg-green-500'} ${!isBackendOffline && 'animate-pulse'}`}></span>
+                                {isBackendOffline ? 'OFFLINE' : t.online}
+                            </span>
+                        </div>
+                    </>
+                  ) : (
+                    <span className="opacity-50 italic">{t.noModelSelected}</span>
+                  )}
+              </div>
+           </div>
+           
+           <div className="flex items-center gap-2">
+               <div className="relative group">
+                   <input 
+                      type="text" 
+                      placeholder={t.searchPlaceholder}
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className={`
+                        w-0 group-hover:w-48 focus:w-48 transition-all duration-300 outline-none
+                        bg-transparent border-b-2 ${styles.borderColor} text-sm px-2
+                      `}
+                   />
+                   <Search size={18} className="cursor-pointer" />
+               </div>
+               
+               <button 
+                  onClick={() => setIsMascotEnabled(!isMascotEnabled)}
+                  className={`p-2 hover:opacity-80 transition-opacity ${!isMascotEnabled ? 'opacity-50 grayscale' : ''}`}
+                  title={isMascotEnabled ? "Disable Mascot" : "Enable Mascot"}
+               >
+                  {isMascotEnabled ? <MessageSquare size={18} /> : <MessageSquareOff size={18} />}
+               </button>
+           </div>
+        </div>
 
-                <span className={`font-bold ${styles.text} uppercase flex items-center gap-2 truncate`}>
-                   {activeProvider?.icon} {activeModel?.name || t.noModelSelected}
-                   {activeModel && <span className={`text-xs px-2 py-0.5 ${styles.borderWidth} ${styles.borderColor} ${styles.radius} bg-green-400 text-black`}>{t.online}</span>}
-                </span>
-             </div>
-             <div className="flex gap-2">
-                 {isBackendOffline && (
-                    <div className="flex items-center gap-2 text-xs font-bold text-red-500 border-2 border-red-500 px-2 py-1 animate-pulse bg-red-100 rounded">
-                        <AlertCircle size={14} /> API OFFLINE
-                    </div>
-                 )}
-                 <div className="relative hidden md:block">
-                     <input 
-                        type="text" 
-                        placeholder={t.searchPlaceholder}
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className={`
-                            pl-8 pr-2 py-1 ${styles.borderWidth} ${styles.borderColor} text-sm w-48 
-                            ${styles.inputBg} ${styles.text} ${styles.radius} placeholder-opacity-50 outline-none
-                            focus:shadow-md transition-shadow
-                        `} 
-                     />
-                     <Search className={`absolute left-2 top-1.5 w-4 h-4 opacity-50 ${styles.text}`} />
-                 </div>
-             </div>
-         </div>
-
-         <div className="flex-1 overflow-hidden bg-white/5 relative">
-             <Chat 
+        {/* Chat Component */}
+        <div className="flex-1 relative overflow-hidden">
+            <Chat 
                 theme={theme}
                 language={language}
                 messages={messages}
@@ -438,26 +447,41 @@ const App: React.FC = () => {
                 onTriggerRainbow={handleRainbowTrigger}
                 setTheme={setTheme}
                 setLanguage={setLanguage}
-                isMoonlightUnlocked={false}
+                isMoonlightUnlocked={true}
                 searchQuery={searchQuery}
                 onStop={handleStopGeneration}
                 isStreaming={isStreaming}
-             />
-         </div>
+            />
+            
+            {/* Mascot Overlay */}
+            {isMascotEnabled && (
+                <div className="absolute bottom-0 right-4 w-48 h-48 pointer-events-none z-40">
+                    <div className="pointer-events-auto">
+                        <Mascot 
+                            theme={theme}
+                            state={mascotState}
+                            speechText={mascotComment}
+                            onSpeechEnd={handleMascotSpeechEnd}
+                        />
+                    </div>
+                </div>
+            )}
+        </div>
       </div>
 
+      {/* Configuration Modal */}
       {isModelManagerOpen && (
-        <ModelManager 
-            theme={theme}
-            language={language}
-            providers={providers}
-            models={models}
-            aceConfig={aceConfig}
-            onUpdateProviders={setProviders}
-            onUpdateModels={setModels}
-            onUpdateAceConfig={setAceConfig}
-            onClose={() => setIsModelManagerOpen(false)}
-        />
+          <ModelManager 
+              theme={theme}
+              language={language}
+              providers={providers}
+              models={models}
+              aceConfig={aceConfig}
+              onUpdateProviders={setProviders}
+              onUpdateModels={setModels}
+              onUpdateAceConfig={setAceConfig}
+              onClose={() => setIsModelManagerOpen(false)}
+          />
       )}
     </div>
   );

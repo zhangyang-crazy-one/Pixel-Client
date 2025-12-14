@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect, useRef, useMemo, useLayoutEffect } from 'react';
 import { Theme, Message, LLMModel, LLMProvider, Language } from '../types';
 import { PixelButton } from './PixelUI';
 import { THEME_STYLES, TRANSLATIONS } from '../constants';
-import { Send, Copy, Check, Moon, Sun, Star, Cpu, Globe, Palette, Loader2, Brain, ChevronDown, ChevronRight, BrainCircuit, Play, Maximize, FileCode, Box, Terminal, Laptop, Coffee, Zap } from 'lucide-react';
+import { Send, Copy, Check, Moon, Sun, Star, Cpu, Globe, Palette, Loader2, Brain, ChevronDown, ChevronRight, BrainCircuit, Play, Maximize, FileCode, Box, Terminal, Laptop, Coffee, Zap, Image as ImageIcon, X as CloseIcon, Paperclip } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
@@ -258,6 +257,8 @@ const MarkdownRenderer: React.FC<{ text: string; theme: Theme }> = React.memo(({
     );
 });
 
+// ... (ThinkingBlock, ToolDetails, ToolActionBlock, parseMessageContent are unchanged) ...
+
 const ThinkingBlock: React.FC<{ content: string; theme: Theme; language: Language }> = React.memo(({ content, theme, language }) => {
     const [isOpen, setIsOpen] = useState(false);
     const t = TRANSLATIONS[language];
@@ -418,7 +419,6 @@ const ToolActionBlock: React.FC<{
     );
 });
 
-// ... (parseMessageContent remains the same) ...
 const parseMessageContent = (content: string, theme: Theme, language: Language, isStreamingMessage: boolean) => {
     const regex = /(<thinking>[\s\S]*?(?:<\/thinking>|$)|<tool_action[\s\S]*?(?:<\/tool_action>|$))/gi;
     const parts = content.split(regex);
@@ -520,6 +520,18 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ msg, theme, la
                  <CopyButton content={msg.content} />
               )}
             </div>
+            
+            {/* Display attachments if any */}
+            {msg.attachments && msg.attachments.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-2">
+                    {msg.attachments.map((url, idx) => (
+                        <div key={idx} className="relative group w-24 h-24 rounded overflow-hidden border border-black/20 bg-black/5">
+                            <img src={url} alt={`attachment-${idx}`} className="w-full h-full object-cover" />
+                        </div>
+                    ))}
+                </div>
+            )}
+
             <div className={`leading-relaxed text-sm ${styles.font}`}>
               {msg.role === 'user' ? (
                   <div className="whitespace-pre-wrap break-words">{msg.content}</div>
@@ -560,6 +572,10 @@ export const Chat: React.FC<ChatProps> = ({
   const [showLangMenu, setShowLangMenu] = useState(false);
   const [isDeepThinkingEnabled, setIsDeepThinkingEnabled] = useState(false);
   
+  // Image Upload State
+  const [attachedImages, setAttachedImages] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const isStreaming = externalIsStreaming || localIsStreaming;
   const scrollRef = useRef<HTMLDivElement>(null);
   const themeRef = useRef<HTMLDivElement>(null);
@@ -568,6 +584,54 @@ export const Chat: React.FC<ChatProps> = ({
 
   const styles = THEME_STYLES[theme];
   const t = TRANSLATIONS[language];
+
+  // Helper to read file as base64
+  const readFileAsBase64 = (file: File): Promise<string> => {
+      return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+      });
+  };
+
+  const handlePaste = async (e: React.ClipboardEvent) => {
+      if (!activeModel || activeModel.type !== 'multimodal') return;
+      
+      const items = e.clipboardData.items;
+      for (let i = 0; i < items.length; i++) {
+          if (items[i].type.indexOf('image') !== -1) {
+              e.preventDefault();
+              const file = items[i].getAsFile();
+              if (file) {
+                  try {
+                      const base64 = await readFileAsBase64(file);
+                      setAttachedImages(prev => [...prev, base64]);
+                  } catch (err) {
+                      console.error("Failed to read pasted image", err);
+                  }
+              }
+          }
+      }
+  };
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (!e.target.files) return;
+      const files = Array.from(e.target.files);
+      for (const file of files) {
+          try {
+              const base64 = await readFileAsBase64(file);
+              setAttachedImages(prev => [...prev, base64]);
+          } catch (err) {
+              console.error("Failed to read selected file", err);
+          }
+      }
+      if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const removeAttachment = (index: number) => {
+      setAttachedImages(prev => prev.filter((_, i) => i !== index));
+  };
 
   // ... (Effect hooks same as before) ...
   useEffect(() => {
@@ -614,16 +678,18 @@ export const Chat: React.FC<ChatProps> = ({
         setInput('');
         return;
     }
-    if (!input.trim() || !activeModel || !provider || isStreaming) return;
+    if ((!input.trim() && attachedImages.length === 0) || !activeModel || !provider || isStreaming) return;
     shouldAutoScrollRef.current = true;
     const userMsg: Message = {
       id: Date.now().toString(),
       role: 'user',
       content: input,
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      attachments: attachedImages.length > 0 ? [...attachedImages] : undefined
     };
     onSendMessage(userMsg, { deepThinkingEnabled: isDeepThinkingEnabled });
     setInput('');
+    setAttachedImages([]);
     setMascotState('thinking');
     setLocalIsStreaming(true);
   };
@@ -643,6 +709,7 @@ export const Chat: React.FC<ChatProps> = ({
 
   const isDisabled = (!activeModel) && input.trim() !== '/upup downdown left right';
   const isButtonDisabled = isDisabled && !isStreaming;
+  const isMultimodal = activeModel?.type === 'multimodal';
 
   const ThemeOption = ({ targetTheme, icon, label }: { targetTheme: Theme, icon: React.ReactNode, label: string }) => (
       <button 
@@ -702,11 +769,29 @@ export const Chat: React.FC<ChatProps> = ({
 
       <div className={`p-4 ${styles.headerBorder} ${styles.secondary} relative z-[70]`}>
         <div className="relative">
+          {/* Image Previews */}
+          {attachedImages.length > 0 && (
+              <div className="flex gap-2 mb-2 overflow-x-auto pb-2">
+                  {attachedImages.map((img, idx) => (
+                      <div key={idx} className="relative group w-16 h-16 shrink-0 rounded overflow-hidden border border-black shadow-sm">
+                          <img src={img} alt="upload" className="w-full h-full object-cover" />
+                          <button 
+                              onClick={() => removeAttachment(idx)}
+                              className="absolute top-0 right-0 bg-red-500 text-white p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                              <CloseIcon size={12} />
+                          </button>
+                      </div>
+                  ))}
+              </div>
+          )}
+
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={activeModel ? `Message ${activeModel.name}...` : "Select a model from the sidebar to start..."}
+            onPaste={handlePaste}
+            placeholder={activeModel ? `Message ${activeModel.name}... ${isMultimodal ? '(Ctrl+V to paste image)' : ''}` : "Select a model from the sidebar to start..."}
             disabled={isDisabled && !input.startsWith('/')}
             className={`
               w-full p-3 pr-12 min-h-[60px] max-h-[200px] resize-none outline-none
@@ -776,6 +861,30 @@ export const Chat: React.FC<ChatProps> = ({
                         <Globe size={20} />
                     </PixelButton>
                 </div>
+                
+                {/* Image Upload Button (Only for Multimodal) */}
+                {isMultimodal && (
+                    <>
+                        <input 
+                            type="file" 
+                            accept="image/*" 
+                            multiple 
+                            ref={fileInputRef} 
+                            className="hidden" 
+                            onChange={handleFileSelect}
+                        />
+                        <PixelButton
+                            theme={theme}
+                            variant="secondary"
+                            className="w-9 h-9 !p-0 flex items-center justify-center"
+                            title={t.uploadImage}
+                            onClick={() => fileInputRef.current?.click()}
+                        >
+                            <ImageIcon size={20} />
+                        </PixelButton>
+                    </>
+                )}
+
              </div>
              
              <div className="flex gap-2">
@@ -807,7 +916,7 @@ export const Chat: React.FC<ChatProps> = ({
                 <PixelButton 
                     theme={theme} 
                     onClick={isStreaming ? onStop : handleSend} 
-                    disabled={isButtonDisabled}
+                    disabled={isButtonDisabled && attachedImages.length === 0}
                     className="w-32 h-9"
                     variant={isStreaming ? 'danger' : 'primary'}
                 >
