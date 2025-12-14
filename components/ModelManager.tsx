@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Theme, LLMProvider, LLMModel, ModelType, AceConfig, Language, ProviderAdapter } from '../types';
 import { PixelButton, PixelInput, PixelCard, PixelSelect, PixelBadge } from './PixelUI';
-import { THEME_STYLES, TRANSLATIONS, getProviderIcon } from '../constants';
+import { THEME_STYLES, TRANSLATIONS } from '../constants';
 import { Trash2, Plus, Zap, X, Cpu, Save, AlertTriangle, Edit, Smile, Star, Activity, Wifi, Loader2 } from 'lucide-react';
 import { ApiClient } from '../services/apiClient';
 
@@ -86,7 +86,7 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
       loadData();
   }, []);
 
-  const chatModels = models.filter(m => m.type === 'chat' || (m.type as any) === 'nlp' || !m.type || m.type === 'multimodal');
+  const chatModels = models.filter(m => m.type === 'chat' || (m.type as any) === 'nlp' || !m.type);
 
   const handleEditProvider = (p: LLMProvider) => {
       setEditingProviderId(p.id);
@@ -288,7 +288,6 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
   const getModelTypeColor = (type?: ModelType) => {
       switch(type) {
           case 'chat': case 'nlp' as any: return 'bg-blue-400 text-black';
-          case 'multimodal': return 'bg-pink-400 text-black';
           case 'embedding': return 'bg-purple-400 text-black';
           case 'rerank': return 'bg-orange-400 text-black';
           default: return 'bg-gray-400 text-black';
@@ -297,7 +296,7 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
 
   // Group models by type for display
   const groupedModels = {
-      chat: models.filter(m => m.type === 'chat' || m.type === 'nlp' as any || !m.type || m.type === 'multimodal'),
+      chat: models.filter(m => m.type === 'chat' || m.type === 'nlp' as any || !m.type),
       embedding: models.filter(m => m.type === 'embedding'),
       rerank: models.filter(m => m.type === 'rerank')
   };
@@ -309,19 +308,15 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
       <div key={m.id} className={`border-2 border-black p-2 mb-2 flex justify-between items-center group bg-white/50 ${isEditing ? 'bg-blue-100/50 border-blue-500' : 'hover:bg-black/5'}`}>
         <div>
           <div className="font-bold flex items-center gap-2">
-              <span className="w-5 h-5 opacity-70">{parent ? getProviderIcon(parent.type) : '🔧'}</span>
               {m.name}
               {m.isDefault && (
                   <PixelBadge theme={theme} color="bg-yellow-400 text-black border-yellow-600">
                       {t.default}
                   </PixelBadge>
               )}
-              {m.type === 'multimodal' && (
-                  <PixelBadge theme={theme} color="bg-pink-400 text-black">VL</PixelBadge>
-              )}
           </div>
-          <div className="text-xs opacity-70 ml-7">{parent?.name} / {m.modelId}</div>
-          <div className="text-[10px] opacity-50 mt-1 ml-7 font-mono">
+          <div className="text-xs opacity-70">{parent?.name} / {m.modelId}</div>
+          <div className="text-[10px] opacity-50 mt-1 font-mono">
              {(m.type === 'chat' || (m.type as any) === 'nlp') && m.contextLength && `CTX: ${m.contextLength}`}
              {m.type === 'embedding' && m.dimensions && `DIM: ${m.dimensions}`}
           </div>
@@ -513,11 +508,8 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
                 providers.map(p => (
                   <div key={p.id} className={`border-2 border-black p-2 mb-2 flex justify-between items-center group ${editingProviderId === p.id ? 'bg-blue-100/50 border-blue-500' : 'hover:bg-black/5'}`}>
                     <div>
-                      <div className="font-bold flex items-center gap-2">
-                        <span className="w-5 h-5">{getProviderIcon(p.type)}</span>
-                        {p.name}
-                      </div>
-                      <div className="text-xs opacity-70 ml-7">{p.baseUrl}</div>
+                      <div className="font-bold">{p.icon} {p.name}</div>
+                      <div className="text-xs opacity-70">{p.baseUrl}</div>
                     </div>
                     <div className="flex items-center">
                         <button onClick={() => handleEditProvider(p)} className="opacity-0 group-hover:opacity-100 text-blue-500 mr-2 hover:scale-110 transition-transform">
@@ -534,7 +526,7 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
                    {groupedModels.chat.length > 0 && (
                       <div>
                           <div className="flex items-center gap-2 mb-2">
-                               <PixelBadge theme={theme} color={getModelTypeColor('chat')}>CHAT / VL</PixelBadge>
+                               <PixelBadge theme={theme} color={getModelTypeColor('chat')}>CHAT</PixelBadge>
                                <div className="h-1 bg-black/20 flex-1"></div>
                           </div>
                           {groupedModels.chat.map(renderModelItem)}
@@ -661,7 +653,6 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
                       </PixelSelect>
                       <PixelSelect theme={theme} label={t.type} value={newModel.type || 'chat'} onChange={e => setNewModel({...newModel, type: e.target.value as ModelType})} disabled={!!editingModelId}>
                           <option value="chat">Chat Completion</option>
-                          <option value="multimodal">Multimodal (VL)</option>
                           <option value="embedding">Embedding</option>
                           <option value="rerank">Rerank</option>
                       </PixelSelect>
@@ -672,7 +663,7 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
                       <PixelInput theme={theme} label={t.modelId} placeholder="e.g. gpt-4-1106-preview" value={newModel.modelId || ''} onChange={e => setNewModel({...newModel, modelId: e.target.value})} />
                    </div>
   
-                   {(newModel.type === 'chat' || newModel.type === 'multimodal') && (
+                   {newModel.type === 'chat' && (
                       <div className="grid grid-cols-3 gap-4">
                           <PixelInput theme={theme} label={t.context} type="number" value={newModel.contextLength || ''} onChange={e => setNewModel({...newModel, contextLength: parseInt(e.target.value)})} />
                           <PixelInput theme={theme} label={t.maxOutput} type="number" value={newModel.maxTokens || ''} onChange={e => setNewModel({...newModel, maxTokens: parseInt(e.target.value)})} />

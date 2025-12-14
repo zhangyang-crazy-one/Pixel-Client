@@ -13,33 +13,10 @@ export const streamChatResponse = async (
   deepThinkingEnabled: boolean = false
 ): Promise<void> => {
   
-  // Transform messages payload
-  const messagesPayload = messages.map(m => {
-      // If it's a multimodal model and the message has images, construct the structured content
-      if (model.type === 'multimodal' && m.attachments && m.attachments.length > 0 && m.role === 'user') {
-          const contentParts: any[] = [
-              { type: 'text', text: m.content }
-          ];
-          
-          m.attachments.forEach(url => {
-              contentParts.push({
-                  type: 'image_url',
-                  image_url: { url: url }
-              });
-          });
-
-          return {
-              role: m.role,
-              content: contentParts
-          };
-      }
-      
-      // Default text-only content
-      return {
-          role: m.role,
-          content: m.content
-      };
-  });
+  const messagesPayload = messages.map(m => ({
+      role: m.role,
+      content: m.content
+  }));
 
   // Construct request body based on API docs
   const payload = {
