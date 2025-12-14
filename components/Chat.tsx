@@ -1,9 +1,10 @@
 
+
 import React, { useState, useEffect, useRef, useMemo, useLayoutEffect } from 'react';
 import { Theme, Message, LLMModel, LLMProvider, Language } from '../types';
 import { PixelButton } from './PixelUI';
 import { THEME_STYLES, TRANSLATIONS } from '../constants';
-import { Send, Copy, Check, Moon, Sun, Star, Cpu, Globe, Palette, Loader2, Brain, ChevronDown, ChevronRight, BrainCircuit, Play, Maximize, FileCode, Box, Terminal, Laptop, Coffee, Zap } from 'lucide-react';
+import { Send, Copy, Check, Moon, Sun, Star, Cpu, Globe, Palette, Loader2, Brain, ChevronDown, ChevronRight, BrainCircuit, Play, Maximize, FileCode, Box, Terminal, Laptop, Coffee, Zap, Paperclip, X } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
@@ -137,7 +138,6 @@ const HtmlPreviewBlock: React.FC<HtmlPreviewBlockProps> = ({ code, theme, defaul
     );
 };
 
-// ... (getMediaType function remains unchanged) ...
 const getMediaType = (url: string) => {
     if (!url) return 'link';
     const cleanUrl = url.split('?')[0].toLowerCase();
@@ -167,8 +167,8 @@ const MarkdownRenderer: React.FC<{ text: string; theme: Theme }> = React.memo(({
                 object: () => <></>,
                 embed: () => <></>,
                 form: () => <></>,
-                html: ({children}: {children?: React.ReactNode}) => <>{children}</>, 
-                body: ({children}: {children?: React.ReactNode}) => <>{children}</>,
+                html: (props: any) => <>{props.children}</>, 
+                body: (props: any) => <>{props.children}</>,
 
                 video: ({node, src, ...props}: any) => (
                      <MediaFrame theme={theme} label="Video Feed" icon={<Play size={14} />}>
@@ -520,6 +520,18 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ msg, theme, la
                  <CopyButton content={msg.content} />
               )}
             </div>
+            
+            {/* Display Images for User Messages */}
+            {msg.role === 'user' && msg.images && msg.images.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-2">
+                    {msg.images.map((img, idx) => (
+                        <div key={idx} className={`relative rounded overflow-hidden border-2 border-white/20 w-32 h-32`}>
+                            <img src={img.startsWith('data:') ? img : `data:image/png;base64,${img}`} alt="Uploaded" className="w-full h-full object-cover" />
+                        </div>
+                    ))}
+                </div>
+            )}
+
             <div className={`leading-relaxed text-sm ${styles.font}`}>
               {msg.role === 'user' ? (
                   <div className="whitespace-pre-wrap break-words">{msg.content}</div>
@@ -560,6 +572,10 @@ export const Chat: React.FC<ChatProps> = ({
   const [showLangMenu, setShowLangMenu] = useState(false);
   const [isDeepThinkingEnabled, setIsDeepThinkingEnabled] = useState(false);
   
+  // Image Upload State
+  const [pendingImages, setPendingImages] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
   const isStreaming = externalIsStreaming || localIsStreaming;
   const scrollRef = useRef<HTMLDivElement>(null);
   const themeRef = useRef<HTMLDivElement>(null);
@@ -568,6 +584,7 @@ export const Chat: React.FC<ChatProps> = ({
 
   const styles = THEME_STYLES[theme];
   const t = TRANSLATIONS[language];
+  const isMultimodal = activeModel?.type === 'multimodal';
 
   // ... (Effect hooks same as before) ...
   useEffect(() => {
@@ -608,22 +625,70 @@ export const Chat: React.FC<ChatProps> = ({
       }
   }, [messages, searchQuery]);
 
+  // Image Handling Functions
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (e.target.files && e.target.files.length > 0) {
+          processFiles(Array.from(e.target.files));
+          // Reset input so same file can be selected again if needed
+          e.target.value = '';
+      }
+  };
+
+  const processFiles = (files: File[]) => {
+      if (!isMultimodal) return;
+      files.forEach(file => {
+          if (!file.type.startsWith('image/')) return;
+          const reader = new FileReader();
+          reader.onload = (e) => {
+              if (e.target?.result && typeof e.target.result === 'string') {
+                  setPendingImages(prev => [...prev, e.target!.result as string]);
+              }
+          };
+          reader.readAsDataURL(file);
+      });
+  };
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+      if (!isMultimodal) return;
+      const items = e.clipboardData.items;
+      const files: File[] = [];
+      for (let i = 0; i < items.length; i++) {
+          if (items[i].type.indexOf('image') !== -1) {
+              const file = items[i].getAsFile();
+              if (file) files.push(file);
+          }
+      }
+      if (files.length > 0) {
+          e.preventDefault();
+          processFiles(files);
+      }
+  };
+
+  const removePendingImage = (index: number) => {
+      setPendingImages(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleSend = async () => {
     if (input.trim() === '/upup downdown left right') {
         onTriggerRainbow();
         setInput('');
         return;
     }
-    if (!input.trim() || !activeModel || !provider || isStreaming) return;
+    
+    // Allow sending if there's text OR images
+    if ((!input.trim() && pendingImages.length === 0) || !activeModel || !provider || isStreaming) return;
+    
     shouldAutoScrollRef.current = true;
     const userMsg: Message = {
       id: Date.now().toString(),
       role: 'user',
       content: input,
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      images: pendingImages.length > 0 ? [...pendingImages] : undefined
     };
     onSendMessage(userMsg, { deepThinkingEnabled: isDeepThinkingEnabled });
     setInput('');
+    setPendingImages([]);
     setMascotState('thinking');
     setLocalIsStreaming(true);
   };
@@ -642,7 +707,7 @@ export const Chat: React.FC<ChatProps> = ({
   };
 
   const isDisabled = (!activeModel) && input.trim() !== '/upup downdown left right';
-  const isButtonDisabled = isDisabled && !isStreaming;
+  const isButtonDisabled = isDisabled && pendingImages.length === 0 && !isStreaming;
 
   const ThemeOption = ({ targetTheme, icon, label }: { targetTheme: Theme, icon: React.ReactNode, label: string }) => (
       <button 
@@ -702,11 +767,29 @@ export const Chat: React.FC<ChatProps> = ({
 
       <div className={`p-4 ${styles.headerBorder} ${styles.secondary} relative z-[70]`}>
         <div className="relative">
+          {/* Pending Images Preview */}
+          {pendingImages.length > 0 && (
+              <div className="flex gap-2 mb-2 overflow-x-auto pb-2">
+                  {pendingImages.map((img, idx) => (
+                      <div key={idx} className={`relative shrink-0 w-16 h-16 ${styles.borderWidth} ${styles.borderColor} ${styles.radius} overflow-hidden group`}>
+                          <img src={img} className="w-full h-full object-cover" alt="Preview" />
+                          <button 
+                              onClick={() => removePendingImage(idx)}
+                              className="absolute top-0 right-0 bg-red-500 text-white p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                              <X size={12} />
+                          </button>
+                      </div>
+                  ))}
+              </div>
+          )}
+
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={activeModel ? `Message ${activeModel.name}...` : "Select a model from the sidebar to start..."}
+            onPaste={handlePaste}
+            placeholder={activeModel ? `Message ${activeModel.name}... ${isMultimodal ? '(Paste images supported)' : ''}` : "Select a model from the sidebar to start..."}
             disabled={isDisabled && !input.startsWith('/')}
             className={`
               w-full p-3 pr-12 min-h-[60px] max-h-[200px] resize-none outline-none
@@ -720,6 +803,29 @@ export const Chat: React.FC<ChatProps> = ({
           
           <div className="flex justify-between mt-2 items-center relative z-50">
              <div className="flex gap-2 items-center">
+                {/* Upload Button */}
+                {isMultimodal && (
+                    <>
+                        <input 
+                            type="file" 
+                            ref={fileInputRef} 
+                            onChange={handleFileSelect} 
+                            accept="image/*" 
+                            multiple 
+                            className="hidden" 
+                        />
+                        <PixelButton
+                            theme={theme}
+                            variant="secondary"
+                            className="w-9 h-9 !p-0 flex items-center justify-center"
+                            title={t.uploadImage}
+                            onClick={() => fileInputRef.current?.click()}
+                        >
+                            <Paperclip size={20} />
+                        </PixelButton>
+                    </>
+                )}
+
                 <div className="relative" ref={themeRef}>
                     {showThemeMenu && (
                         <div className={`

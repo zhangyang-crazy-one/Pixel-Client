@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Theme, LLMProvider, LLMModel, Message, AceConfig, Language, ChatSession } from './types';
-import { INITIAL_ACE_CONFIG, THEME_STYLES, TRANSLATIONS } from './constants';
+import { INITIAL_ACE_CONFIG, THEME_STYLES, TRANSLATIONS, getProviderIcon } from './constants';
 import { PixelButton, PixelSelect, PixelCard } from './components/PixelUI';
 import { ModelManager } from './components/ModelManager';
 import { Chat } from './components/Chat';
@@ -119,7 +119,7 @@ const App: React.FC = () => {
       setMessages([]);
   };
 
-  const chatModels = models.filter(m => m.type === 'chat' || m.type === 'nlp' as any || !m.type);
+  const chatModels = models.filter(m => m.type === 'chat' || m.type === 'multimodal' || m.type === 'nlp' as any || !m.type);
   const activeModel = models.find(m => m.id === activeModelId) || null;
   const activeProvider = activeModel ? providers.find(p => p.id === activeModel.providerId) || null : null;
 
@@ -398,7 +398,10 @@ const App: React.FC = () => {
                 </PixelButton>
 
                 <span className={`font-bold ${styles.text} uppercase flex items-center gap-2 truncate`}>
-                   {activeProvider?.icon} {activeModel?.name || t.noModelSelected}
+                   <div className="w-5 h-5 flex items-center justify-center">
+                     {activeProvider ? getProviderIcon(activeProvider.type) : <div className="w-4 h-4 bg-gray-500 rounded-full" />}
+                   </div>
+                   {activeModel?.name || t.noModelSelected}
                    {activeModel && <span className={`text-xs px-2 py-0.5 ${styles.borderWidth} ${styles.borderColor} ${styles.radius} bg-green-400 text-black`}>{t.online}</span>}
                 </span>
              </div>

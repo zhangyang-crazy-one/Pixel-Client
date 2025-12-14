@@ -13,10 +13,29 @@ export const streamChatResponse = async (
   deepThinkingEnabled: boolean = false
 ): Promise<void> => {
   
-  const messagesPayload = messages.map(m => ({
-      role: m.role,
-      content: m.content
-  }));
+  const messagesPayload = messages.map(m => {
+      // Handle Multimodal Content
+      if (model.type === 'multimodal' && m.role === 'user' && m.images && m.images.length > 0) {
+          return {
+              role: m.role,
+              content: [
+                  { type: 'text', text: m.content || '' },
+                  ...m.images.map(img => ({
+                      type: 'image_url',
+                      image_url: {
+                          url: img.startsWith('data:') ? img : `data:image/png;base64,${img}`
+                      }
+                  }))
+              ]
+          };
+      }
+      
+      // Standard Text Content
+      return {
+          role: m.role,
+          content: m.content
+      };
+  });
 
   // Construct request body based on API docs
   const payload = {
