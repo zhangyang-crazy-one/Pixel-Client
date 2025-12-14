@@ -158,17 +158,17 @@ const MarkdownRenderer: React.FC<{ text: string; theme: Theme }> = React.memo(({
             remarkPlugins={[remarkGfm, remarkMath]}
             rehypePlugins={[rehypeKatex, rehypeRaw]}
             components={{
-                style: () => <></>,
-                script: () => <></>,
-                link: () => <></>,
-                meta: () => <></>,
-                head: () => <></>,
-                iframe: () => <></>, 
-                object: () => <></>,
-                embed: () => <></>,
-                form: () => <></>,
-                html: (props: any) => <>{props.children as React.ReactNode}</>, 
-                body: (props: any) => <>{props.children as React.ReactNode}</>,
+                style: () => null,
+                script: () => null,
+                link: () => null,
+                meta: () => null,
+                head: () => null,
+                iframe: () => null, 
+                object: () => null,
+                embed: () => null,
+                form: () => null,
+                html: ({ children }: { children?: React.ReactNode }) => <>{children}</>, 
+                body: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
 
                 video: ({node, src, ...props}: any) => (
                      <MediaFrame theme={theme} label="Video Feed" icon={<Play size={14} />}>
@@ -230,21 +230,23 @@ const MarkdownRenderer: React.FC<{ text: string; theme: Theme }> = React.memo(({
                                     </div>
                                     <span className="uppercase">{lang}</span>
                                 </div>
-                                <SyntaxHighlighter
-                                    style={vscDarkPlus}
-                                    language={lang}
-                                    PreTag="div"
-                                    customStyle={{ 
-                                        margin: 0, 
-                                        borderRadius: 0, 
-                                        fontFamily: styles.type === 'pixel' ? '"VT323", monospace' : '"Menlo", monospace', 
-                                        fontSize: '14px', 
-                                        lineHeight: '1.4',
-                                        background: '#1e1e1e' 
-                                    }}
-                                >
-                                    {String(children).replace(/\n$/, '')}
-                                </SyntaxHighlighter>
+                                <div className="overflow-x-auto">
+                                    <SyntaxHighlighter
+                                        style={vscDarkPlus}
+                                        language={lang}
+                                        PreTag="div"
+                                        customStyle={{ 
+                                            margin: 0, 
+                                            borderRadius: 0, 
+                                            fontFamily: styles.type === 'pixel' ? '"VT323", monospace' : '"Menlo", monospace', 
+                                            fontSize: '14px', 
+                                            lineHeight: '1.4',
+                                            background: '#1e1e1e' 
+                                        }}
+                                    >
+                                        {String(children).replace(/\n$/, '')}
+                                    </SyntaxHighlighter>
+                                </div>
                             </div>
                         );
                     }
@@ -523,10 +525,10 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ msg, theme, la
             
             {/* Display Images for User Messages */}
             {msg.role === 'user' && msg.images && msg.images.length > 0 && (
-                <div className="flex flex-wrap gap-2 mb-2">
+                <div className="flex flex-col gap-2 mb-2">
                     {msg.images.map((img, idx) => (
-                        <div key={idx} className={`relative rounded overflow-hidden border-2 border-white/20 w-32 h-32`}>
-                            <img src={img.startsWith('data:') ? img : `data:image/png;base64,${img}`} alt="Uploaded" className="w-full h-full object-cover" />
+                        <div key={idx} className={`relative rounded overflow-hidden border-2 border-white/20 max-w-full`}>
+                            <img src={img.startsWith('data:') ? img : `data:image/png;base64,${img}`} alt="Uploaded" className="max-w-full h-auto max-h-[500px] object-contain" />
                         </div>
                     ))}
                 </div>
@@ -534,7 +536,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ msg, theme, la
 
             <div className={`leading-relaxed text-sm ${styles.font}`}>
               {msg.role === 'user' ? (
-                  <div className="whitespace-pre-wrap break-words">{msg.content}</div>
+                  <div className="whitespace-pre-wrap break-all">{msg.content}</div>
               ) : (
                   msg.content ? (
                       isHtml ? (
