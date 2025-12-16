@@ -71,6 +71,52 @@ export interface AceConfig {
   curatorModelId: string;
 }
 
+// MCP Types
+export interface McpTool {
+  name: string;
+  description: string;
+  inputSchema?: any;
+}
+
+export interface McpServerStatus {
+  phase: 'starting' | 'running' | 'stopping' | 'stopped' | 'error';
+  message: string;
+  startedAt?: string;
+}
+
+export interface McpServer {
+  id: string;
+  status: McpServerStatus;
+  tools?: McpTool[];
+  lastActivity?: string;
+  // Configuration for display/editing if available
+  type?: string;
+  command?: string;
+  args?: string[];
+  env?: Record<string, string>;
+}
+
+export interface McpStats {
+  servers: {
+    total: number;
+    running: number;
+    stopped: number;
+    error: number;
+  };
+  tools: {
+    total: number;
+  };
+  uptime: number;
+}
+
+export interface McpRegistrationConfig {
+  id: string;
+  type: 'stdio';
+  command: string;
+  args?: string[];
+  env?: Record<string, string>;
+}
+
 // API Types
 export interface ApiSession {
   sessionId: string;

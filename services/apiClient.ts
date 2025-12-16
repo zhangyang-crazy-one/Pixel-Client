@@ -1,6 +1,6 @@
 
 import { API_BASE_URL, API_KEY } from '../constants';
-import { LLMModel, LLMProvider, ModelType, ApiSession, SessionHistory, Message, ProviderAdapter, ProviderTestResponse } from '../types';
+import { LLMModel, LLMProvider, ModelType, ApiSession, SessionHistory, Message, ProviderAdapter, ProviderTestResponse, McpServer, McpRegistrationConfig, McpStats } from '../types';
 
 const fetchWithTimeout = async (url: string, options: RequestInit = {}, timeout = 5000) => {
     const controller = new AbortController();
@@ -363,5 +363,54 @@ export const ApiClient = {
           headers: getHeaders(),
           body: JSON.stringify({ requestId })
       });
+  },
+
+  // MCP
+  Mcp: {
+    getServers: async (): Promise<McpServer[]> => {
+        try {
+            const res = await fetchWithTimeout(`${API_BASE_URL}/api/mcp/servers`, { headers: getHeaders() });
+            if (!res.ok) throw new Error('Failed to fetch MCP servers');
+            const json = await res.json();
+            return json.success ? json.data : [];
+        } catch (e) {
+            console.warn("API Error (MCP Servers):", e);
+            return [];
+        }
+    },
+
+    registerServer: async (config: McpRegistrationConfig): Promise<void> => {
+        const res = await fetchWithTimeout(`${API_BASE_URL}/api/mcp/servers`, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify(config)
+        });
+        if (!res.ok) throw new Error('Failed to register MCP server');
+    },
+
+    deleteServer: async (serverId: string): Promise<void> => {
+        await fetchWithTimeout(`${API_BASE_URL}/api/mcp/servers/${serverId}`, {
+            method: 'DELETE',
+            headers: getHeaders()
+        });
+    },
+
+    restartServer: async (serverId: string): Promise<void> => {
+         await fetchWithTimeout(`${API_BASE_URL}/api/mcp/servers/${serverId}/restart`, {
+            method: 'POST',
+            headers: getHeaders()
+        });
+    },
+
+    getStats: async (): Promise<McpStats | null> => {
+        try {
+            const res = await fetchWithTimeout(`${API_BASE_URL}/api/mcp/statistics`, { headers: getHeaders() });
+            if (!res.ok) return null;
+            const json = await res.json();
+            return json.success ? json.data : null;
+        } catch (e) {
+            return null;
+        }
+    }
   }
 };

@@ -1,5 +1,6 @@
 
 
+
 import { LLMProvider, LLMModel, Theme, AceConfig, Language } from './types';
 import React from 'react';
 
@@ -301,6 +302,24 @@ export const TRANSLATIONS = {
     noModelsConfigured: 'No models configured. Please add a provider and model.',
     uploadImage: 'Upload Image',
     noModelSelected: 'No Model Selected',
+    
+    // MCP Translations
+    mcp: 'MCP SERVERS',
+    mcpDesc: 'Manage Model Context Protocol servers and tools.',
+    mcpServers: 'SERVERS',
+    addServer: 'ADD SERVER',
+    serverStatus: 'STATUS',
+    tools: 'TOOLS',
+    command: 'COMMAND',
+    args: 'ARGS (comma separated)',
+    envVars: 'ENV VARIABLES (JSON)',
+    restart: 'RESTART',
+    running: 'RUNNING',
+    stopped: 'STOPPED',
+    error: 'ERROR',
+    mcpStats: 'MCP SYSTEM STATS',
+    uptime: 'UPTIME',
+    totalTools: 'TOTAL TOOLS'
   },
   zh: {
     newChat: '新对话',
@@ -390,6 +409,24 @@ export const TRANSLATIONS = {
     noModelsConfigured: '未配置模型。请添加服务商和模型。',
     uploadImage: '上传图片',
     noModelSelected: '未选择模型',
+    
+    // MCP Translations
+    mcp: 'MCP 服务器',
+    mcpDesc: '管理 Model Context Protocol 服务器与工具。',
+    mcpServers: '服务器列表',
+    addServer: '添加服务器',
+    serverStatus: '状态',
+    tools: '工具',
+    command: '启动命令',
+    args: '参数 (逗号分隔)',
+    envVars: '环境变量 (JSON)',
+    restart: '重启',
+    running: '运行中',
+    stopped: '已停止',
+    error: '错误',
+    mcpStats: 'MCP 系统统计',
+    uptime: '运行时间',
+    totalTools: '工具总数'
   },
   ja: {
     newChat: '新規チャット',
@@ -479,5 +516,23 @@ export const TRANSLATIONS = {
     noModelsConfigured: 'モデルが設定されていません。プロバイダーとモデルを追加してください。',
     uploadImage: '画像アップロード',
     noModelSelected: 'モデル未選択',
+    
+    // MCP Translations
+    mcp: 'MCP サーバー',
+    mcpDesc: 'Model Context Protocol サーバーとツールの管理。',
+    mcpServers: 'サーバー一覧',
+    addServer: 'サーバー追加',
+    serverStatus: 'ステータス',
+    tools: 'ツール',
+    command: '起動コマンド',
+    args: '引数 (カンマ区切り)',
+    envVars: '環境変数 (JSON)',
+    restart: '再起動',
+    running: '実行中',
+    stopped: '停止',
+    error: 'エラー',
+    mcpStats: 'MCP システム統計',
+    uptime: '稼働時間',
+    totalTools: 'ツール総数'
   }
 };

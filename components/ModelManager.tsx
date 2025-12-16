@@ -1,9 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
-import { Theme, LLMProvider, LLMModel, ModelType, AceConfig, Language, ProviderAdapter } from '../types';
+import { Theme, LLMProvider, LLMModel, ModelType, AceConfig, Language, ProviderAdapter, McpServer, McpStats, McpRegistrationConfig } from '../types';
 import { PixelButton, PixelInput, PixelCard, PixelSelect, PixelBadge } from './PixelUI';
 import { THEME_STYLES, TRANSLATIONS, getProviderIcon } from '../constants';
-import { Trash2, Plus, Zap, X, Cpu, Save, AlertTriangle, Edit, Smile, Star, Activity, Wifi, Loader2 } from 'lucide-react';
+import { Trash2, Plus, Zap, X, Cpu, Save, AlertTriangle, Edit, Smile, Star, Activity, Wifi, Loader2, Server, Terminal, Box, Play, PauseCircle } from 'lucide-react';
 import { ApiClient } from '../services/apiClient';
 
 interface ModelManagerProps {
@@ -29,7 +29,7 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
   onUpdateAceConfig,
   onClose
 }) => {
-  const [activeTab, setActiveTab] = useState<'providers' | 'models' | 'ace' | 'mascot'>('providers');
+  const [activeTab, setActiveTab] = useState<'providers' | 'models' | 'ace' | 'mascot' | 'mcp'>('providers');
   const [testStatus, setTestStatus] = useState<string | null>(null);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const styles = THEME_STYLES[theme];
@@ -67,6 +67,14 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
   // Mascot Config State
   const [mascotSystemPrompt, setMascotSystemPrompt] = useState('');
 
+  // MCP State
+  const [mcpServers, setMcpServers] = useState<McpServer[]>([]);
+  const [mcpStats, setMcpStats] = useState<McpStats | null>(null);
+  const [selectedMcpServer, setSelectedMcpServer] = useState<McpServer | null>(null);
+  const [newMcpServer, setNewMcpServer] = useState<{
+      id: string, command: string, args: string, env: string
+  }>({ id: '', command: '', args: '', env: '{}' });
+
   // Fetch Data on Open
   useEffect(() => {
       const loadData = async () => {
@@ -85,6 +93,20 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
       };
       loadData();
   }, []);
+
+  // Fetch MCP Data when tab is active
+  useEffect(() => {
+      if (activeTab === 'mcp') {
+          loadMcpData();
+      }
+  }, [activeTab]);
+
+  const loadMcpData = async () => {
+      const servers = await ApiClient.Mcp.getServers();
+      setMcpServers(servers);
+      const stats = await ApiClient.Mcp.getStats();
+      setMcpStats(stats);
+  };
 
   const chatModels = models.filter(m => m.type === 'chat' || (m.type as any) === 'nlp' || !m.type || m.type === 'multimodal');
 
@@ -285,6 +307,53 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
       setTimeout(() => setTestStatus(null), 2000);
   };
 
+  // MCP Actions
+  const handleRegisterMcpServer = async () => {
+      try {
+          let envObj = {};
+          try {
+              envObj = JSON.parse(newMcpServer.env);
+          } catch(e) {
+              alert('Invalid JSON in Env Variables');
+              return;
+          }
+
+          const config: McpRegistrationConfig = {
+              id: newMcpServer.id,
+              type: 'stdio',
+              command: newMcpServer.command,
+              args: newMcpServer.args.split(',').map(s => s.trim()).filter(Boolean),
+              env: envObj
+          };
+
+          await ApiClient.Mcp.registerServer(config);
+          await loadMcpData();
+          setNewMcpServer({ id: '', command: '', args: '', env: '{}' });
+      } catch(e) {
+          alert(t.saveFailed);
+      }
+  };
+
+  const handleDeleteMcpServer = async (id: string) => {
+      if(!confirm('Delete MCP Server?')) return;
+      try {
+          await ApiClient.Mcp.deleteServer(id);
+          await loadMcpData();
+          if (selectedMcpServer?.id === id) setSelectedMcpServer(null);
+      } catch(e) {
+          alert(t.saveFailed);
+      }
+  };
+
+  const handleRestartMcpServer = async (id: string) => {
+      try {
+          await ApiClient.Mcp.restartServer(id);
+          await loadMcpData();
+      } catch(e) {
+          alert(t.saveFailed);
+      }
+  }
+
   const getModelTypeColor = (type?: ModelType) => {
       switch(type) {
           case 'chat': case 'nlp' as any: return 'bg-blue-400 text-black';
@@ -376,7 +445,7 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-2 mb-4">
+        <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
           <PixelButton 
             theme={theme} 
             onClick={() => setActiveTab('providers')} 
@@ -404,6 +473,13 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
             variant={activeTab === 'mascot' ? 'primary' : 'secondary'}
           >
             {t.mascotConfig}
+          </PixelButton>
+          <PixelButton 
+            theme={theme} 
+            onClick={() => setActiveTab('mcp')} 
+            variant={activeTab === 'mcp' ? 'primary' : 'secondary'}
+          >
+            {t.mcp}
           </PixelButton>
         </div>
 
@@ -501,6 +577,143 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
                              <Save className="w-4 h-4" /> {t.saveConfig}
                         </PixelButton>
                     </div>
+                 </div>
+             </div>
+        ) : activeTab === 'mcp' ? (
+             <div className="flex-1 overflow-y-auto flex gap-4">
+                 {/* MCP Servers List */}
+                 <div className="w-1/3 border-r-4 border-black pr-4 flex flex-col overflow-y-auto">
+                    <div className="mb-4 bg-black/10 p-2 border border-black/20">
+                        <div className="text-[10px] uppercase font-bold opacity-60 mb-1">{t.mcpStats}</div>
+                        <div className="flex justify-between text-xs">
+                            <span>{t.mcpServers}: {mcpStats?.servers.total || 0}</span>
+                            <span className="text-green-600 font-bold">{t.running}: {mcpStats?.servers.running || 0}</span>
+                            <span>{t.totalTools}: {mcpStats?.tools.total || 0}</span>
+                        </div>
+                    </div>
+                    {mcpServers.map(server => (
+                        <div 
+                            key={server.id} 
+                            onClick={() => setSelectedMcpServer(server)}
+                            className={`
+                                border-2 border-black p-2 mb-2 cursor-pointer transition-all
+                                ${selectedMcpServer?.id === server.id ? 'bg-blue-500/10 border-blue-500' : 'hover:bg-black/5'}
+                            `}
+                        >
+                            <div className="flex justify-between items-start">
+                                <div className="font-bold flex items-center gap-2">
+                                    <Server size={14} />
+                                    {server.id}
+                                </div>
+                                <div className={`text-[10px] px-1 font-bold rounded ${server.status.phase === 'running' ? 'bg-green-200 text-green-900' : 'bg-red-200 text-red-900'}`}>
+                                    {server.status.phase.toUpperCase()}
+                                </div>
+                            </div>
+                            <div className="text-xs opacity-60 mt-1 flex gap-2">
+                                <span>{t.tools}: {server.tools?.length || 0}</span>
+                            </div>
+                        </div>
+                    ))}
+                    <PixelButton theme={theme} onClick={() => setSelectedMcpServer(null)} variant="secondary" className="mt-2 text-xs">
+                        <Plus size={12} /> {t.addServer}
+                    </PixelButton>
+                 </div>
+
+                 {/* MCP Details / Add Form */}
+                 <div className="w-2/3 pl-2 overflow-y-auto">
+                    {selectedMcpServer ? (
+                        <div className="space-y-4">
+                            <div className="flex justify-between items-center border-b-2 border-black mb-4 pb-2">
+                                <div>
+                                    <h3 className="text-xl font-bold flex items-center gap-2">
+                                        <Server className="text-blue-500"/> {selectedMcpServer.id}
+                                    </h3>
+                                    <div className="text-xs opacity-50">{selectedMcpServer.status.message}</div>
+                                </div>
+                                <div className="flex gap-2">
+                                    <PixelButton theme={theme} variant="secondary" onClick={() => handleRestartMcpServer(selectedMcpServer.id)}>
+                                        <Play size={14} /> {t.restart}
+                                    </PixelButton>
+                                    <PixelButton theme={theme} variant="danger" onClick={() => handleDeleteMcpServer(selectedMcpServer.id)}>
+                                        <Trash2 size={14} />
+                                    </PixelButton>
+                                </div>
+                            </div>
+
+                            <div>
+                                <h4 className="font-bold border-b border-black/20 mb-2 flex items-center gap-2"><Terminal size={14}/> {t.tools}</h4>
+                                <div className="space-y-2">
+                                    {selectedMcpServer.tools && selectedMcpServer.tools.length > 0 ? (
+                                        selectedMcpServer.tools.map(tool => (
+                                            <div key={tool.name} className="p-2 border border-black/20 bg-white/5">
+                                                <div className="font-bold text-sm text-blue-600">{tool.name}</div>
+                                                <div className="text-xs opacity-70 mb-1">{tool.description}</div>
+                                                {tool.inputSchema && (
+                                                    <div className="bg-black/5 p-1 text-[10px] font-mono whitespace-pre-wrap">
+                                                        {JSON.stringify(tool.inputSchema, null, 2)}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="text-sm opacity-50 italic">No tools advertised.</div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            <div className="border-b-2 border-black mb-4 pb-2">
+                                <h3 className="text-xl font-bold">{t.addServer}</h3>
+                                <p className="text-sm opacity-60">{t.mcpDesc}</p>
+                            </div>
+                            
+                            <PixelInput 
+                                theme={theme} 
+                                label="Server ID" 
+                                value={newMcpServer.id} 
+                                onChange={e => setNewMcpServer({...newMcpServer, id: e.target.value})} 
+                                placeholder="e.g. filesystem-mcp"
+                            />
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <PixelInput 
+                                    theme={theme} 
+                                    label={t.command} 
+                                    value={newMcpServer.command} 
+                                    onChange={e => setNewMcpServer({...newMcpServer, command: e.target.value})} 
+                                    placeholder="e.g. npx, uvx"
+                                />
+                                <PixelInput 
+                                    theme={theme} 
+                                    label={t.args} 
+                                    value={newMcpServer.args} 
+                                    onChange={e => setNewMcpServer({...newMcpServer, args: e.target.value})} 
+                                    placeholder="e.g. -y @modelcontextprotocol/server-filesystem"
+                                />
+                            </div>
+
+                            <div>
+                                <label className={`text-xs font-bold uppercase ${styles.textMuted}`}>{t.envVars}</label>
+                                <textarea 
+                                    className={`
+                                        w-full p-2 h-32 outline-none 
+                                        ${styles.borderWidth} ${styles.borderColor} ${styles.radius}
+                                        ${styles.inputBg} ${styles.text} font-mono text-sm
+                                    `}
+                                    value={newMcpServer.env}
+                                    onChange={e => setNewMcpServer({...newMcpServer, env: e.target.value})}
+                                    placeholder='{"API_KEY": "..."}'
+                                />
+                            </div>
+
+                            <div className="flex justify-end pt-4">
+                                <PixelButton theme={theme} onClick={handleRegisterMcpServer} disabled={!newMcpServer.id || !newMcpServer.command}>
+                                    <Plus size={14} /> {t.addServer}
+                                </PixelButton>
+                            </div>
+                        </div>
+                    )}
                  </div>
              </div>
         ) : (
