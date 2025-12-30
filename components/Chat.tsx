@@ -313,12 +313,15 @@ const ToolDetails: React.FC<{ content: string; theme: Theme; language: Language;
      const { params, error } = useMemo(() => {
         try {
             let safeContent = content;
-            if (!content.includes('</tool_action>')) safeContent += '</tool_action>';
+            // 兼容两种标签闭合
+            if (!content.includes('</tool_action>') && content.startsWith('<tool_action')) safeContent += '</tool_action>';
+            if (!content.includes('</action>') && content.startsWith('<action')) safeContent += '</action>';
+
             const parser = new DOMParser();
             const doc = parser.parseFromString(safeContent, "text/xml");
             if (doc.querySelector("parsererror")) return { params: [], error: 'Parsing Error' };
 
-            const root = doc.querySelector("tool_action");
+            const root = doc.querySelector("tool_action") || doc.querySelector("action");
             if (!root) return { params: [], error: 'Invalid XML' };
 
             const extractedParams: { key: string, attrs: Record<string,string>, value: string }[] = [];
@@ -370,45 +373,59 @@ const ToolActionBlock: React.FC<{
     theme: Theme; 
     language?: Language;
     state: 'running' | 'success' | 'failed';
-}> = React.memo(({ name, count, rawContents, theme, language = 'en', state }) => {
+    toolType?: 'skill' | 'mcp' | 'builtin';
+}> = React.memo(({ name, count, rawContents, theme, language = 'en', state, toolType = 'mcp' }) => {
     const [isExpanded, setIsExpanded] = useState(false);
     const styles = THEME_STYLES[theme];
 
-    const { label, colorClass, iconColor, isRunning } = useMemo(() => {
+    const { label, colorClass, icon, isRunning, themeColor } = useMemo(() => {
         const isRunning = state === 'running';
         const isFailed = state === 'failed';
-        const isSuccess = state === 'success';
+        
+        let themeColor = 'blue';
+        let iconComp = <Box size={12} />;
+        let typeLabel = 'MCP';
 
-        let colorClass = 'border-opacity-50';
-        let iconColor = styles.text;
+        // 根据 toolType 决定基础视觉
+        if (toolType === 'skill') {
+            themeColor = 'purple';
+            iconComp = <Star size={12} />;
+            typeLabel = language === 'zh' ? '技能执行' : 'SKILL';
+        } else if (toolType === 'builtin') {
+            themeColor = 'green';
+            iconComp = <Cpu size={12} />;
+            typeLabel = language === 'zh' ? '系统内置' : 'BUILTIN';
+        } else {
+            themeColor = 'blue';
+            iconComp = <Box size={12} />;
+            typeLabel = language === 'zh' ? 'MCP 工具' : 'MCP';
+        }
+
+        let colorClass = `border-${themeColor}-500 border-opacity-50`;
+        let textBaseColor = `text-${themeColor}-500`;
 
         if (isRunning) {
-            colorClass = 'border-blue-500 border-opacity-70';
-            iconColor = 'text-blue-500';
+            colorClass = `border-blue-500 border-opacity-70`;
+            textBaseColor = 'text-blue-500';
         } else if (isFailed) {
             colorClass = 'border-red-500 border-opacity-70';
-            iconColor = 'text-red-500';
-        } else if (isSuccess) {
-            colorClass = 'border-green-500 border-opacity-70';
-            iconColor = 'text-green-500';
+            textBaseColor = 'text-red-500';
+            iconComp = <AlertCircle size={12} />;
         }
 
-        let label = '';
+        let stateLabel = '';
         if (language === 'zh') {
-            if (isRunning) label = '运行中...';
-            else if (isFailed) label = '执行失败';
-            else label = '执行成功';
-        } else if (language === 'ja') {
-            if (isRunning) label = '実行中...';
-            else if (isFailed) label = '失敗';
-            else label = '成功';
+            if (isRunning) stateLabel = '运行中...';
+            else if (isFailed) stateLabel = '失败';
+            else stateLabel = '完成';
         } else {
-            if (isRunning) label = 'Running...';
-            else if (isFailed) label = 'Failed';
-            else label = 'Success';
+            if (isRunning) stateLabel = 'Running...';
+            else if (isFailed) stateLabel = 'Failed';
+            else stateLabel = 'Done';
         }
-        return { label, colorClass, iconColor, isRunning };
-    }, [state, language, styles.text]);
+
+        return { label: `${typeLabel} • ${stateLabel}`, colorClass, icon: iconComp, isRunning, themeColor, textBaseColor };
+    }, [state, language, toolType]);
 
     return (
         <div className={`
@@ -420,18 +437,12 @@ const ToolActionBlock: React.FC<{
              className="flex items-center justify-between px-2 py-1.5 cursor-pointer select-none"
            >
               <div className="flex items-center gap-2 opacity-80">
-                 <div className="relative w-3 h-3 flex items-center justify-center">
-                    {isRunning ? (
-                        <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></div>
-                    ) : state === 'failed' ? (
-                        <AlertCircle size={12} className="text-red-500" />
-                    ) : (
-                        <Terminal size={12} className={iconColor} />
-                    )}
+                 <div className={`relative w-3 h-3 flex items-center justify-center ${isRunning ? 'animate-pulse' : ''}`}>
+                    {icon}
                  </div>
                  
                  <div className="flex items-baseline gap-2">
-                    <span className={`font-bold ${isRunning ? 'text-blue-500' : state === 'failed' ? 'text-red-500' : 'text-green-500'}`}>
+                    <span className={`font-bold ${isRunning ? 'text-blue-500' : state === 'failed' ? 'text-red-500' : `text-${themeColor}-500`}`}>
                         {name}
                     </span>
                     <span className={`text-[10px] opacity-60`}>
@@ -460,11 +471,13 @@ const ToolActionBlock: React.FC<{
 });
 
 const parseMessageContent = (content: string, theme: Theme, language: Language, isStreamingMessage: boolean) => {
-    const regex = /(<thinking>[\s\S]*?(?:<\/thinking>|$)|<tool_action[\s\S]*?(?:<\/tool_action>|$))/gi;
+    // 同时支持 <thinking>, <tool_action>, <action> 标签
+    const regex = /(<thinking>[\s\S]*?(?:<\/thinking>|$)|<tool_action[\s\S]*?(?:<\/tool_action>|$)|<action[\s\S]*?(?:<\/action>|$))/gi;
     const parts = content.split(regex);
     const renderedNodes: React.ReactNode[] = [];
     let pendingTools: string[] = [];
     let currentToolName = '';
+    let currentToolType: 'skill' | 'mcp' | 'builtin' = 'mcp';
 
     const flushTools = (isFinal: boolean) => {
         if (pendingTools.length > 0) {
@@ -486,20 +499,28 @@ const parseMessageContent = (content: string, theme: Theme, language: Language, 
                     theme={theme} 
                     language={language}
                     state={state}
+                    toolType={currentToolType}
                 />
             );
             pendingTools = [];
             currentToolName = '';
+            currentToolType = 'mcp';
         }
     };
 
     parts.forEach((part, index) => {
         if (!part.trim()) return;
-        if (part.startsWith('<tool_action')) {
-            const match = part.match(/name=['"]([^'"]+)['"]/);
-            const name = match ? match[1] : 'Unknown';
-            if (currentToolName && name !== currentToolName) flushTools(false);
+        if (part.startsWith('<tool_action') || part.startsWith('<action')) {
+            const nameMatch = part.match(/name=['"]([^'"]+)['"]/);
+            const typeMatch = part.match(/type=['"]([^'"]+)['"]/);
+            
+            const name = nameMatch ? nameMatch[1] : 'Unknown';
+            const type = (typeMatch ? typeMatch[1] : 'mcp') as any;
+
+            if (currentToolName && (name !== currentToolName || type !== currentToolType)) flushTools(false);
+            
             currentToolName = name;
+            currentToolType = ['skill', 'mcp', 'builtin'].includes(type) ? type : 'mcp';
             pendingTools.push(part);
         } else {
             flushTools(false);
@@ -540,7 +561,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ msg, theme, la
         : `${styles.secondary} ${styles.text}`;
 
     const hasThinking = useMemo(() => msg.content?.includes('<thinking>'), [msg.content]);
-    const hasTool = useMemo(() => msg.content?.includes('<tool_action'), [msg.content]);
+    const hasTool = useMemo(() => msg.content?.includes('<tool_action') || msg.content?.includes('<action'), [msg.content]);
     const isHtml = useMemo(() => {
         const trimmed = msg.content.trim();
         return /^\s*<!DOCTYPE html>/i.test(trimmed) || /^\s*<html/i.test(trimmed);

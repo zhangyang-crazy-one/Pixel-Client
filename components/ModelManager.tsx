@@ -579,7 +579,7 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
                     <div className="mb-4 bg-black/10 p-2 border border-black/20">
                         <div className="text-[10px] uppercase font-bold opacity-60 mb-1">{t.mcpStats}</div>
                         <div className="flex justify-between text-xs">
-                            {/* CRITICAL FIX: Use nested optional chaining to prevent crash */}
+                            {/* CRITICAL FIX: 全链路可选链保护，防止嵌套属性读取错误 */}
                             <span>{t.mcpServers}: {mcpStats?.servers?.total ?? mcpServers.length}</span>
                             <span className="text-green-600 font-bold">{t.running}: {mcpStats?.servers?.running ?? mcpServers.filter(s => s.status.phase === 'running').length}</span>
                             <span>{t.totalTools}: {mcpStats?.tools?.total ?? mcpServers.reduce((acc, s) => acc + (s.tools?.length || 0), 0)}</span>

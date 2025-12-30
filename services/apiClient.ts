@@ -108,7 +108,7 @@ export const ApiClient = {
         return data.providers.map(adaptProvider);
     } catch (e) {
         console.warn("API Error (Providers):", e);
-        return []; // Fallback/Mock for UI safety
+        return []; 
     }
   },
 
@@ -366,7 +366,7 @@ export const ApiClient = {
             const res = await fetchWithTimeout(`${API_BASE_URL}/api/mcp/servers`, { headers: getHeaders() });
             if (!res.ok) throw new Error('Failed to fetch MCP servers');
             const json = await res.json();
-            // Handle common data wrappers in response
+            // 兼容带有 data 字段的响应结构
             if (json.success && Array.isArray(json.data)) return json.data;
             if (Array.isArray(json)) return json;
             return [];
