@@ -198,7 +198,6 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
     if (!newModel.name || !newModel.modelId || !newModel.providerId) return;
     const type = newModel.type as ModelType || 'chat';
     
-    // Prepare payload basics
     const modelPayload: any = {
       providerId: newModel.providerId,
       name: newModel.name,
@@ -221,7 +220,6 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
             onUpdateModels([...models, created]);
         }
         
-        // Reset form
         setNewModel({ 
             ...newModel, 
             name: '', 
@@ -269,7 +267,7 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
     const payload = {
         provider: provider.type,
         baseConfig: {
-            apiKey: provider.apiKey || '', // Note: This might be empty if masked
+            apiKey: provider.apiKey || '',
             baseURL: provider.baseUrl
         },
         model: newModel.modelId
@@ -364,7 +362,6 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
       }
   };
 
-  // Group models by type for display
   const groupedModels = {
       chat: models.filter(m => m.type === 'chat' || m.type === 'nlp' as any || !m.type),
       multimodal: models.filter(m => m.type === 'multimodal'),
@@ -407,7 +404,6 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-      {/* CONFIRMATION DIALOG OVERLAY */}
       {showConfirmDialog && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm">
             <PixelCard theme={theme} className={`w-[90%] max-w-[400px] ${styles.bg} ${styles.text} flex flex-col gap-4 border-4 border-red-500 animate-float`}>
@@ -444,7 +440,6 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
           </PixelButton>
         </div>
 
-        {/* Tabs */}
         <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
           <PixelButton 
             theme={theme} 
@@ -483,7 +478,6 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
           </PixelButton>
         </div>
 
-        {/* Content Area */}
         {activeTab === 'ace' ? (
           <div className="flex-1 overflow-y-auto p-4 flex flex-col items-center">
              <div className="max-w-2xl w-full space-y-8">
@@ -581,14 +575,14 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
              </div>
         ) : activeTab === 'mcp' ? (
              <div className="flex-1 overflow-y-auto flex gap-4">
-                 {/* MCP Servers List */}
                  <div className="w-1/3 border-r-4 border-black pr-4 flex flex-col overflow-y-auto">
                     <div className="mb-4 bg-black/10 p-2 border border-black/20">
                         <div className="text-[10px] uppercase font-bold opacity-60 mb-1">{t.mcpStats}</div>
                         <div className="flex justify-between text-xs">
-                            <span>{t.mcpServers}: {mcpStats?.servers.total || 0}</span>
-                            <span className="text-green-600 font-bold">{t.running}: {mcpStats?.servers.running || 0}</span>
-                            <span>{t.totalTools}: {mcpStats?.tools.total || 0}</span>
+                            {/* CRITICAL FIX: Use nested optional chaining to prevent crash */}
+                            <span>{t.mcpServers}: {mcpStats?.servers?.total ?? mcpServers.length}</span>
+                            <span className="text-green-600 font-bold">{t.running}: {mcpStats?.servers?.running ?? mcpServers.filter(s => s.status.phase === 'running').length}</span>
+                            <span>{t.totalTools}: {mcpStats?.tools?.total ?? mcpServers.reduce((acc, s) => acc + (s.tools?.length || 0), 0)}</span>
                         </div>
                     </div>
                     {mcpServers.map(server => (
@@ -619,7 +613,6 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
                     </PixelButton>
                  </div>
 
-                 {/* MCP Details / Add Form */}
                  <div className="w-2/3 pl-2 overflow-y-auto">
                     {selectedMcpServer ? (
                         <div className="space-y-4">
@@ -718,7 +711,6 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
              </div>
         ) : (
           <div className="flex-1 overflow-y-auto flex gap-4">
-            {/* List Column */}
             <div className="w-1/3 border-r-4 border-black pr-4 flex flex-col overflow-y-auto">
               {activeTab === 'providers' ? (
                 providers.map(p => (
@@ -789,7 +781,6 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
               )}
             </div>
   
-            {/* Form Column */}
             <div className="w-2/3 pl-2 overflow-y-auto">
                {activeTab === 'providers' ? (
                  <div className="space-y-4">
@@ -823,7 +814,6 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
                                   <option key={adapter.provider} value={adapter.provider}>{adapter.name}</option>
                               ))
                           ) : (
-                              // Fallback if API hasn't loaded
                               <option value="custom">Custom</option>
                           )}
                       </PixelSelect>
@@ -831,7 +821,6 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
                    <PixelInput theme={theme} label={t.apiBaseUrl} placeholder="https://..." value={newProvider.baseUrl || ''} onChange={e => setNewProvider({...newProvider, baseUrl: e.target.value})} />
                    <PixelInput theme={theme} label={t.apiKey} type="password" placeholder={editingProviderId ? "(Leave empty to keep existing)" : "sk-..."} value={newProvider.apiKey || ''} onChange={e => setNewProvider({...newProvider, apiKey: e.target.value})} />
                    
-                   {/* Connection Test & Save */}
                    <div className="flex flex-col gap-2 mt-4">
                         <div className="flex gap-2">
                             <PixelButton theme={theme} onClick={handleSaveProvider} disabled={!newProvider.name || !newProvider.baseUrl}>
@@ -843,7 +832,6 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
                             </PixelButton>
                         </div>
                         
-                        {/* Test Result Display */}
                         {connectionResult && (
                             <div className={`
                                 p-2 text-xs font-bold border-2 border-black flex flex-col gap-1

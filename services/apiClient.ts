@@ -130,7 +130,6 @@ export const ApiClient = {
               method: 'POST',
               headers: getHeaders() 
           });
-          // API returns 200 for success, maybe others for fail, but response body contains success field
           const data = await res.json();
           return data;
       } catch (e) {
@@ -201,7 +200,6 @@ export const ApiClient = {
         name: provider.name,
         baseConfig: {
             baseURL: provider.baseUrl,
-            // Only send apiKey if it's provided (non-empty), otherwise keep existing on server
             ...(provider.apiKey ? { apiKey: provider.apiKey } : {})
         }
     };
@@ -277,7 +275,6 @@ export const ApiClient = {
   updateModel: async (model: Partial<LLMModel> & { id: string, providerId: string }): Promise<LLMModel> => {
      const payload = {
          modelName: model.name,
-         // Note: modelType is typically not editable after creation in this API design
          enabled: true,
          isDefault: model.isDefault,
          modelConfig: {
@@ -312,8 +309,6 @@ export const ApiClient = {
       const res = await fetchWithTimeout(`${API_BASE_URL}/v1/chat/sessions/active${params}`, { headers: getHeaders() });
       if (!res.ok) return [];
       const data = await res.json();
-      // Handle potential variations in API response structure
-      // Some endpoints return data directly, others wrap in 'data' field
       if (Array.isArray(data.sessions)) return data.sessions;
       if (data.data && Array.isArray(data.data.sessions)) return data.data.sessions;
       return [];
@@ -347,7 +342,6 @@ export const ApiClient = {
           const res = await fetchWithTimeout(`${API_BASE_URL}/v1/chat/sessions/${conversationId}/messages?limit=${limit}&offset=${offset}`, { headers: getHeaders() });
           if (!res.ok) return [];
           const data = await res.json();
-          // Some APIs might wrap in data.data.messages or data.messages
           const apiMessages: ApiMessage[] = data?.data?.messages || data?.messages || [];
           return apiMessages.map(adaptMessage);
       } catch (e) {
@@ -372,7 +366,10 @@ export const ApiClient = {
             const res = await fetchWithTimeout(`${API_BASE_URL}/api/mcp/servers`, { headers: getHeaders() });
             if (!res.ok) throw new Error('Failed to fetch MCP servers');
             const json = await res.json();
-            return json.success ? json.data : [];
+            // Handle common data wrappers in response
+            if (json.success && Array.isArray(json.data)) return json.data;
+            if (Array.isArray(json)) return json;
+            return [];
         } catch (e) {
             console.warn("API Error (MCP Servers):", e);
             return [];
