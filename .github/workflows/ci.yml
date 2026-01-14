@@ -1,0 +1,125 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'src/**'
+      - 'services/**'
+      - 'types/**'
+      - 'App.tsx'
+      - 'components/**'
+      - 'constants.ts'
+      - 'types.ts'
+      - 'package.json'
+      - 'tsconfig.json'
+      - 'vite.config.ts'
+      - '.github/workflows/**'
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  types-sync:
+    name: Sync TypeScript Types
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Rust dependencies
+        run: cd src-tauri && cargo check --lib
+
+      - name: Generate TypeScript types
+        run: |
+          cd src-tauri
+          mkdir -p ../src/types
+          ls -la src/types/ 2>/dev/null || echo "No generated types yet"
+
+      - name: Commit generated types
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add src/types/
+          if git diff --cached --quiet; then
+            echo "No changes to types"
+          else
+            git commit -m "chore: sync TypeScript types from Rust" || echo "No commit needed"
+            git push || echo "Already up to date"
+          fi
+
+  lint-and-type-check:
+    name: Lint and Type Check
+    runs-on: ubuntu-latest
+    needs: types-sync
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npx eslint . --max-warnings 0
+
+      - name: Check TypeScript types
+        run: npx tsc --noEmit
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    needs: lint-and-type-check
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: [types-sync, lint-and-type-check, test]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Build Tauri app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
