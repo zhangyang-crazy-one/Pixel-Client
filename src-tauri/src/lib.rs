@@ -1,4 +1,6 @@
 // Tauri application core
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tauri::{AppHandle, Manager, State};
@@ -25,10 +27,20 @@ fn get_config(state: State<'_, PixelState>) -> AppConfig {
     state.config.blocking_lock().clone()
 }
 
+#[tauri::command]
+fn update_config(config: AppConfig, state: State<'_, PixelState>) {
+    *state.config.blocking_lock() = config;
+}
+
+#[tauri::command]
+fn send_notification(title: String, body: String, state: State<'_, PixelState>) -> Result<(), String> {
+    state.notification_manager.send_notification(&title, &body)
+}
+
 pub fn configure_app<R: tauri::Runtime>(builder: tauri::Builder<R>) -> tauri::Builder<R> {
     builder
         .plugin(tauri_plugin_notification::init())
-        .invoke_handler(tauri::generate_handler![get_config])
+        .invoke_handler(tauri::generate_handler![get_config, update_config, send_notification])
 }
 
 pub fn initialize_state<R: tauri::Runtime>(app: &AppHandle) {
