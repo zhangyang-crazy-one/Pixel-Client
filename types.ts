@@ -50,7 +50,7 @@ export interface ProviderTestResponse {
   details?: unknown;
 }
 
-export type ModelType = 'chat' | 'embedding' | 'rerank' | 'multimodal';
+export type ModelType = 'chat' | 'embedding' | 'rerank' | 'multimodal' | 'nlp';
 
 export interface LLMModel {
   id: string;
