@@ -1,13 +1,59 @@
 # 项目进度 (Progress)
 
-> 版本: v5.6
+> 版本: v5.7
 > 更新日期: 2026-01-15
 
 ## 总体进度
 
-**完成率: 17/35 = 49%** (+1 from v5.4)
+**完成率: 19/35 = 54%** (+5% from v5.6)
 
 ## 迭代历史
+
+### v5.7 - Phase 4 Rust 后端模块实现 (2026-01-15)
+
+**状态**: 已完成
+
+**完成项**:
+- [x] 创建状态管理模块 (state.rs)
+  - AppState, Message, ChatSession 数据结构
+  - LLMProvider, LLMModel 配置模型
+  - McpServer, McpTool MCP 协议支持
+  - SharedState 线程安全封装
+- [x] 创建 Markdown 渲染服务 (renderer.rs)
+  - pulldown-cmark 集成
+  - syntect 代码高亮
+  - 语言别名映射
+- [x] 创建状态持久化服务 (persistence.rs)
+  - bincode + zstd 压缩序列化
+  - JSON 导出/导入
+  - 自动备份支持
+- [x] 创建聊天命令模块 (chat.rs)
+  - 会话 CRUD 操作
+  - 消息管理
+  - 流式通信占位符
+- [x] 修复 Cargo.toml 依赖
+  - 添加 uuid crate
+  - 添加 html-escape crate
+- [x] 编译验证
+  - cargo check: 通过
+  - cargo build: 通过
+
+**新增文件**:
+```
+src-tauri/src/
+├── state.rs                          (新建 - 状态管理)
+├── commands/
+│   ├── mod.rs                        (新建 - 命令模块)
+│   └── chat.rs                       (新建 - 聊天命令)
+└── services/
+    ├── mod.rs                        (新建 - 服务模块)
+    ├── renderer.rs                   (新建 - Markdown渲染)
+    └── persistence.rs                (新建 - 状态持久化)
+```
+
+**注意**: 
+- 流式通信 (stream_chat_completions) 需要更复杂的 Tauri v2 异步处理
+- 这些功能将在后续 PR 中完善
 
 ### v5.6 - 第十四次代码审查与问题修复 (2026-01-15)
 
@@ -95,13 +141,14 @@ bun run build: 成功
 
 ## 下一步行动
 
-1. [ ] 更新 planning/progress.md → v5.7
-2. [ ] 创建 Rust 模块 (可选):
-   - renderer.rs
-   - persistence.rs
-   - events.rs
-   - state.rs
-   - excalidraw.rs
-   - markdown.rs
-3. [ ] 扩展测试覆盖 (集成测试)
-4. [ ] 更新 API.md 文档
+1. [x] 更新 planning/progress.md → v5.7 (完成)
+2. [x] 创建 Rust 模块 (完成)
+   - [x] renderer.rs
+   - [x] persistence.rs
+   - [x] state.rs
+   - [x] chat.rs
+3. [ ] 实现完整的流式通信 (stream_chat_completions)
+4. [ ] 扩展测试覆盖 (集成测试)
+5. [ ] 更新 API.md 文档
+6. [ ] 实现渲染命令 (render_markdown)
+7. [ ] 实现持久化命令 (save_state, load_state)
