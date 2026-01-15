@@ -4,6 +4,7 @@
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tauri::{Manager, State};
+use ts_rs::TS;
 
 // Core modules
 mod state;
@@ -13,7 +14,8 @@ mod commands;
 pub use state::{AppState, SharedState, Message, ChatSession, LLMProvider, LLMModel, AppConfig};
 
 // Legacy AppConfig for backward compatibility
-#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, TS)]
+#[ts(export, export_to = "../src/types/app_config.ts")]
 pub struct LegacyAppConfig {
     pub theme: String,
     pub language: String,
