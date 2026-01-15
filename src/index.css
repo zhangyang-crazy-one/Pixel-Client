@@ -1,0 +1,150 @@
+@import "tailwindcss";
+
+/* Pixel UI Theme Customizations */
+.theme-pixel {
+  --font-pixel-verse: 'VT323', 'Noto Sans SC', monospace;
+}
+
+.theme-modern {
+  font-family: 'Inter', 'Noto Sans SC', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Custom Scrollbar - Adaptive */
+.theme-pixel ::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+.theme-pixel ::-webkit-scrollbar-track {
+  background: #2d2b40;
+}
+
+.theme-pixel ::-webkit-scrollbar-thumb {
+  background: #ff00ff;
+  border: 2px solid #0d0c1d;
+  box-shadow: inset -2px -2px 0px rgba(0,0,0,0.2);
+}
+
+.theme-modern ::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.theme-modern ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.theme-modern ::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.5);
+  border-radius: 3px;
+}
+
+/* Pixel Art Utilities */
+.pixel-border {
+  box-shadow: -2px 0 0 0 black, 2px 0 0 0 black, 0 -2px 0 0 black, 0 2px 0 0 black;
+}
+
+.pixel-shadow {
+  box-shadow: 4px 4px 0px 0px rgba(0,0,0,1);
+}
+
+.pixel-shadow-sm {
+  box-shadow: 2px 2px 0px 0px rgba(0,0,0,1);
+}
+
+.pixel-shadow-hover:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0px 0px rgba(0,0,0,1);
+}
+
+.pixel-shadow-active:active {
+  transform: translate(2px, 2px);
+  box-shadow: 0px 0px 0px 0px rgba(0,0,0,1);
+}
+
+/* Animations */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-4px); }
+}
+
+.animate-float {
+  animation: float 3s steps(4) infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.animate-cursor {
+  animation: blink 1s steps(2) infinite;
+}
+
+.scanline-effect::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(to bottom, transparent 50%, rgba(0, 0, 0, 0.05) 51%);
+  background-size: 100% 4px;
+  pointer-events: none;
+  z-index: 50;
+}
+
+.rainbow-mode {
+  animation: rainbow-cycle 2s linear infinite;
+}
+
+@keyframes rainbow-cycle {
+  0% { filter: hue-rotate(0deg); }
+  100% { filter: hue-rotate(360deg); }
+}
+
+/* Markdown Styling */
+.markdown-body p {
+  margin-bottom: 0.75em;
+}
+
+.markdown-body p:last-child {
+  margin-bottom: 0;
+}
+
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3 {
+  font-weight: 700;
+  margin-top: 1em;
+  margin-bottom: 0.5em;
+  line-height: 1.2;
+}
+
+.theme-pixel .markdown-body code {
+  font-family: 'VT323', monospace;
+  background: rgba(0,0,0,0.1);
+  padding: 0.1em 0.3em;
+  border-radius: 2px;
+  font-size: 1.1em;
+}
+
+.theme-modern .markdown-body code {
+  font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+  background: rgba(125, 125, 125, 0.1);
+  padding: 0.2em 0.4em;
+  border-radius: 4px;
+  font-size: 0.85em;
+}
+
+/* Base Font Settings */
+body {
+  margin: 0;
+  padding: 0;
+}
+
+.theme-pixel {
+  font-family: 'VT323', 'Noto Sans SC', monospace;
+  image-rendering: pixelated;
+}

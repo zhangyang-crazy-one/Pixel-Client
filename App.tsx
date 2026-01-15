@@ -119,7 +119,7 @@ const App: React.FC = () => {
       setMessages([]);
   };
 
-  const chatModels = models.filter(m => m.type === 'chat' || m.type === 'multimodal' || m.type === 'nlp' as any || !m.type);
+  const chatModels = models.filter(m => m.type === 'chat' || m.type === 'multimodal' || !m.type);
   const activeModel = models.find(m => m.id === activeModelId) || null;
   const activeProvider = activeModel ? providers.find(p => p.id === activeModel.providerId) || null : null;
 

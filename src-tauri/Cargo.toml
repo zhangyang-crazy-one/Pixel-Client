@@ -13,6 +13,7 @@ path = "src/lib.rs"
 # path = "src/main.rs"
 
 [build-dependencies]
+ts-rs = "10"
 
 [dependencies]
 tauri = { version = "2.0", features = [] }

@@ -4,12 +4,22 @@
 import { invoke } from '@tauri-apps/api/core';
 import type {
   AppConfig,
+} from '../src/types/app_config';
+import type {
   ChatMessage,
+} from '../src/types/message';
+import type {
   StreamingChunk,
+} from '../src/types/streaming_chunk';
+import type {
   HighlightResult,
+} from '../src/types/highlight_result';
+import type {
   ExcalidrawScene,
+} from '../src/types/excalidraw_scene';
+import type {
   ExcalidrawElement,
-} from '../types';
+} from '../src/types/excalidraw_element';
 
 /**
  * Tauri API client for backend communication

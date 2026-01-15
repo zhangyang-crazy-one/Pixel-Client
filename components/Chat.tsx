@@ -157,7 +157,7 @@ const MarkdownRenderer: React.FC<{ text: string; theme: Theme }> = React.memo(({
     return (
         <ReactMarkdown
             remarkPlugins={[remarkGfm, remarkMath]}
-            rehypePlugins={[rehypeKatex, rehypeRaw]}
+            rehypePlugins={[rehypeKatex, rehypeRaw] as unknown[]}
             components={{
                 style: () => null,
                 script: () => null,
@@ -170,18 +170,18 @@ const MarkdownRenderer: React.FC<{ text: string; theme: Theme }> = React.memo(({
                 form: () => null,
                 html: ({ children }: { children?: React.ReactNode }) => <>{children}</>, 
                 body: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
-                p: ({children}: any) => <p className="mb-2 break-words whitespace-pre-wrap">{children}</p>,
-                video: ({node, src, ...props}: any) => (
+                p: ({children}: { children?: React.ReactNode }) => <p className="mb-2 break-words whitespace-pre-wrap">{children}</p>,
+                video: ({node, src, ...props}: { node?: unknown; src?: string; [key: string]: unknown }) => (
                      <MediaFrame theme={theme} label="Video Feed" icon={<Play size={14} />}>
-                        <video controls className="w-full max-h-[400px]" src={src as string} {...props} />
+                        <video controls className="w-full max-h-[400px]" src={src as string} {...props as React.VideoHTMLAttributes<HTMLVideoElement>} />
                      </MediaFrame>
                 ),
-                audio: ({node, src, ...props}: any) => (
+                audio: ({node, src, ...props}: { node?: unknown; src?: string; [key: string]: unknown }) => (
                     <MediaFrame theme={theme} label="Audio Log" icon={<Play size={14} />}>
-                        <audio controls className="w-full" src={src as string} {...props} />
+                        <audio controls className="w-full" src={src as string} {...props as React.AudioHTMLAttributes<HTMLAudioElement>} />
                     </MediaFrame>
                 ),
-                a: ({node, href, children, ...props}: any) => {
+                a: ({node, href, children, ...props}: { node?: unknown; href?: string; children?: React.ReactNode; [key: string]: unknown }) => {
                     const url = (typeof href === 'string' ? href : undefined) || '';
                     const type = getMediaType(url);
                     
@@ -207,9 +207,9 @@ const MarkdownRenderer: React.FC<{ text: string; theme: Theme }> = React.memo(({
                         );
                     }
 
-                    return <a href={href as string} className="text-blue-500 hover:text-blue-400 underline break-all" target="_blank" rel="noopener noreferrer" {...props}>{children}</a>;
+                    return <a href={href as string} className="text-blue-500 hover:text-blue-400 underline break-all" target="_blank" rel="noopener noreferrer" {...props as React.AnchorHTMLAttributes<HTMLAnchorElement>}>{children}</a>;
                 },
-                img: ({node, src, alt, ...props}: any) => {
+                img: ({node, src, alt, ...props}: { node?: unknown; src?: string; alt?: string; [key: string]: unknown }) => {
                     return (
                         <div className={`my-2 inline-block relative group rounded overflow-hidden`}>
                             <img src={src as string} alt={alt} className={`max-w-full h-auto ${styles.shadow}`} loading="lazy" {...props} />
@@ -347,12 +347,12 @@ const ToolDetails: React.FC<{ content: string; theme: Theme; language: Language;
                     <div key={idx} className="flex flex-col gap-1 text-xs">
                          <div className="flex items-center gap-2">
                              <span className="font-bold text-blue-500">{p.key}</span>
-                             {Object.entries(p.attrs).map(([k, v]) => (
-                                 <span key={k} className="opacity-70">
-                                     <span className="text-purple-500">{k}</span>=
-                                     <span className="text-green-600">"{v}"</span>
-                                 </span>
-                             ))}
+                              {Object.entries(p.attrs).map(([k, v]) => (
+                                  <span key={k} className="opacity-70">
+                                      <span className="text-purple-500">{k}</span>=
+                                      <span className="text-green-600">"{String(v)}"</span>
+                                  </span>
+                              ))}
                          </div>
                          {p.value && (
                              <div className={`pl-4 border-l ${styles.borderColor} border-opacity-20`}>

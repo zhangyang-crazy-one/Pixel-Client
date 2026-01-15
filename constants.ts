@@ -6,7 +6,7 @@ import React from 'react';
 
 // ApexBridge Configuration
 export const API_BASE_URL = 'http://localhost:3000';
-export const API_KEY = 'sk-apex-bridge-key'; // Replace with your actual bridge key
+export const API_KEY = import.meta.env.VITE_LLM_API_KEY || 'sk-apex-bridge-key';
 
 export const INITIAL_PROVIDERS: LLMProvider[] = []; 
 export const INITIAL_MODELS: LLMModel[] = []; 
