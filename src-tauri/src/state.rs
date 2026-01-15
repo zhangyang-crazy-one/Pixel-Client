@@ -5,9 +5,11 @@ use std::sync::{Arc, RwLock};
 use serde::{Serialize, Deserialize};
 use std::collections::HashMap;
 use chrono::Utc;
+use ts_rs::TS;
 
 /// Application configuration
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export, export_to = "app_config.ts")]
 pub struct AppConfig {
     pub theme: String,
     pub language: String,
@@ -33,10 +35,11 @@ impl Default for AppConfig {
 }
 
 /// Chat message structure
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct Message {
     pub id: String,
-    pub role: String, // "user" | "assistant" | "system"
+    pub role: String,
     pub content: String,
     pub timestamp: u64,
     pub model_id: Option<String>,
@@ -59,7 +62,8 @@ impl Message {
 }
 
 /// Chat session/conversation
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct ChatSession {
     pub id: String,
     pub title: String,
@@ -84,24 +88,26 @@ impl ChatSession {
 }
 
 /// LLM Provider configuration
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct LLMProvider {
     pub id: String,
     pub name: String,
-    pub provider_type: String, // "openai" | "anthropic" | "google" | "deepseek" | etc.
+    pub provider_type: String,
     pub base_url: String,
     pub api_key: String,
     pub enabled: bool,
 }
 
 /// LLM Model configuration
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct LLMModel {
     pub id: String,
     pub provider_id: String,
     pub name: String,
     pub model_id: String,
-    pub model_type: String, // "chat" | "embedding" | "rerank" | "multimodal" | "nlp"
+    pub model_type: String,
     pub context_length: Option<usize>,
     pub max_tokens: Option<usize>,
     pub temperature: Option<f32>,
@@ -110,10 +116,11 @@ pub struct LLMModel {
 }
 
 /// MCP Server configuration
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct McpServer {
     pub id: String,
-    pub server_type: String, // "stdio"
+    pub server_type: String,
     pub command: String,
     pub args: Vec<String>,
     pub env: HashMap<String, String>,
@@ -128,7 +135,8 @@ pub struct McpTool {
 }
 
 /// ACE Agent configuration
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct AceConfig {
     pub fast_model_id: String,
     pub reflector_model_id: String,
@@ -146,7 +154,8 @@ impl Default for AceConfig {
 }
 
 /// Main application state
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct AppState {
     pub config: AppConfig,
     pub sessions: HashMap<String, ChatSession>,

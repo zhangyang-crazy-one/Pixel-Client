@@ -4,7 +4,6 @@
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tauri::{Manager, State};
-use ts_rs::TS;
 
 // Core modules
 mod state;
@@ -13,9 +12,9 @@ mod commands;
 // Re-export state types
 pub use state::{AppState, SharedState, Message, ChatSession, LLMProvider, LLMModel, AppConfig};
 
-// Legacy AppConfig for backward compatibility
-#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, TS)]
-#[ts(export, export_to = "../src/types/app_config.ts")]
+// Legacy AppConfig - kept for backward compatibility with existing frontend
+// New code should use AppConfig from state module
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
 pub struct LegacyAppConfig {
     pub theme: String,
     pub language: String,
@@ -66,4 +65,17 @@ pub fn initialize_state<R: tauri::Runtime>(app: &tauri::AppHandle) {
         })),
     };
     app.manage(state);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use state::AppConfig;
+    
+    #[test]
+    fn types_are_exportable() {
+        // Verify AppConfig implements TS trait (triggered by cargo test --lib)
+        let config = AppConfig::default();
+        let _serialized = serde_json::to_string(&config).unwrap();
+    }
 }

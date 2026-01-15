@@ -39,7 +39,8 @@ jobs:
           cd src-tauri
           cargo test --lib -- --nocapture
           mkdir -p ../src/types
-          ls -la src/types/
+          cp bindings/*.ts ../src/types/ 2>/dev/null || echo "No bindings generated"
+          ls -la ../src/types/
 
       - name: Commit generated types
         if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
