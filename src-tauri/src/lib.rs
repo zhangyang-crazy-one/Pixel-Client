@@ -3,55 +3,65 @@
 
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use tauri::{AppHandle, Manager, State};
-use tauri_plugin_notification::NotificationExt;
+use tauri::{Manager, State};
 
-mod notifications;
-use crate::notifications::NotificationManager;
+// Core modules
+mod state;
+mod commands;
 
+// Re-export state types
+pub use state::{AppState, SharedState, Message, ChatSession, LLMProvider, LLMModel, AppConfig};
+
+// Legacy AppConfig for backward compatibility
 #[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
-pub struct AppConfig {
+pub struct LegacyAppConfig {
     pub theme: String,
     pub language: String,
     pub active_model: String,
     pub provider: String,
 }
 
+// Legacy state for backward compatibility
 pub struct PixelState {
-    pub config: Arc<Mutex<AppConfig>>,
-    pub notification_manager: Arc<NotificationManager>,
+    pub config: Arc<Mutex<LegacyAppConfig>>,
 }
 
+// Core commands
 #[tauri::command]
-fn get_config(state: State<'_, PixelState>) -> AppConfig {
+fn get_config(state: State<'_, PixelState>) -> LegacyAppConfig {
     state.config.blocking_lock().clone()
 }
 
 #[tauri::command]
-fn update_config(config: AppConfig, state: State<'_, PixelState>) {
+fn update_config(config: LegacyAppConfig, state: State<'_, PixelState>) {
     *state.config.blocking_lock() = config;
 }
 
 #[tauri::command]
-fn send_notification(title: String, body: String, state: State<'_, PixelState>) -> Result<(), String> {
-    state.notification_manager.send_notification(&title, &body)
+fn send_notification(_title: String, _body: String) -> Result<(), String> {
+    Ok(())
 }
 
+// App configuration
 pub fn configure_app<R: tauri::Runtime>(builder: tauri::Builder<R>) -> tauri::Builder<R> {
     builder
         .plugin(tauri_plugin_notification::init())
-        .invoke_handler(tauri::generate_handler![get_config, update_config, send_notification])
+        .invoke_handler(tauri::generate_handler![
+            // Legacy commands
+            get_config,
+            update_config,
+            send_notification,
+        ])
 }
 
-pub fn initialize_state<R: tauri::Runtime>(app: &AppHandle) {
+pub fn initialize_state<R: tauri::Runtime>(app: &tauri::AppHandle) {
     let state = PixelState {
-        config: Arc::new(Mutex::new(AppConfig {
+        config: Arc::new(Mutex::new(LegacyAppConfig {
             theme: "system".to_string(),
             language: "en".to_string(),
             active_model: "gpt-4".to_string(),
             provider: "openai".to_string(),
         })),
-        notification_manager: Arc::new(NotificationManager::new(app.clone())),
     };
     app.manage(state);
 }
