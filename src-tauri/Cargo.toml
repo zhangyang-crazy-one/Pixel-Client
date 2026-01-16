@@ -8,13 +8,13 @@ edition = "2021"
 [lib]
 path = "src/lib.rs"
 
-# [[bin]]
-# name = "pixel-client"
-# path = "src/main.rs"
+[[bin]]
+name = "pixel-client"
+path = "src/main.rs"
 
 [dependencies]
 ts-rs = "10"
-tauri = "2.0"
+tauri = { version = "2.9", features = ["devtools", "shell-open", "notification-all"] }
 tauri-plugin-notification = "2.0"
 tauri-plugin-shell = "2.0"
 tokio = { version = "1", features = ["full"] }
@@ -33,6 +33,7 @@ futures = "0.3"
 
 [build-dependencies]
 ts-rs = "10"
+tauri-build = "2"
 
 [features]
 default = ["custom-protect"]
