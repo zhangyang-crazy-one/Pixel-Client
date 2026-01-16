@@ -5,7 +5,6 @@ use std::io::{Read, Write};
 use std::path::PathBuf;
 use bincode;
 use zstd;
-use serde::{Serialize, Deserialize};
 use crate::state::AppState;
 use std::sync::{Arc, RwLock};
 use std::time::{Duration, SystemTime};
@@ -17,10 +16,8 @@ const STATE_FILE: &str = "pixel_client_state.bin";
 const COMPRESSION_LEVEL: i32 = 3;
 
 /// Auto-save interval (30 seconds)
+#[allow(dead_code)]
 const AUTO_SAVE_INTERVAL: Duration = Duration::from_secs(30);
-
-/// Maximum backup count
-const MAX_BACKUPS: u8 = 5;
 
 /// Get the default state file path
 fn get_state_file_path() -> Option<PathBuf> {
@@ -31,7 +28,6 @@ fn get_state_file_path() -> Option<PathBuf> {
 }
 
 /// Save state to file with compression
-#[tauri::command]
 pub fn save_state(state: &AppState) -> Result<(), String> {
     let path = get_state_file_path()
         .ok_or("Failed to get state file path".to_string())?;
@@ -62,7 +58,6 @@ pub fn save_state(state: &AppState) -> Result<(), String> {
 }
 
 /// Load state from file with decompression
-#[tauri::command]
 pub fn load_state() -> Result<AppState, String> {
     let path = get_state_file_path()
         .ok_or("Failed to get state file path".to_string())?;
@@ -95,7 +90,6 @@ pub fn load_state() -> Result<AppState, String> {
 }
 
 /// Create backup of current state
-#[tauri::command]
 pub fn create_backup() -> Result<(), String> {
     let state = load_state()?;
     let timestamp = SystemTime::now()
@@ -135,7 +129,6 @@ fn clean_old_backups() -> Result<(), String> {
 }
 
 /// Get state file size in bytes
-#[tauri::command]
 pub fn get_state_size() -> Result<u64, String> {
     let path = get_state_file_path()
         .ok_or("Failed to get state file path".to_string())?;
@@ -151,7 +144,6 @@ pub fn get_state_size() -> Result<u64, String> {
 }
 
 /// Export state to JSON format
-#[tauri::command]
 pub fn export_state_json() -> Result<String, String> {
     let state = load_state()?;
     let json = serde_json::to_string_pretty(&state)
@@ -160,7 +152,6 @@ pub fn export_state_json() -> Result<String, String> {
 }
 
 /// Import state from JSON format
-#[tauri::command]
 pub fn import_state_json(json: String) -> Result<(), String> {
     let state: AppState = serde_json::from_str(&json)
         .map_err(|e| format!("Failed to deserialize state from JSON: {}", e))?;
@@ -170,7 +161,6 @@ pub fn import_state_json(json: String) -> Result<(), String> {
 }
 
 /// Clear all state data
-#[tauri::command]
 pub fn clear_state() -> Result<(), String> {
     let path = get_state_file_path()
         .ok_or("Failed to get state file path".to_string())?;
@@ -184,6 +174,7 @@ pub fn clear_state() -> Result<(), String> {
 }
 
 /// Persistence service wrapper for auto-save
+#[allow(dead_code)]
 #[derive(Clone)]
 pub struct PersistenceService {
     state: Arc<RwLock<AppState>>,
@@ -191,6 +182,7 @@ pub struct PersistenceService {
     auto_save_enabled: Arc<RwLock<bool>>,
 }
 
+#[allow(dead_code)]
 impl PersistenceService {
     pub fn new(state: Arc<RwLock<AppState>>) -> Self {
         Self {
@@ -221,9 +213,10 @@ impl PersistenceService {
 
     /// Enable or disable auto-save
     pub fn set_auto_save(&self, enabled: bool) {
-        *self.auto_save_enabled.write().map_err(|_| "Write lock error".to_string()).unwrap_or_else(|_| {
-            // If write fails, just ignore
-        });
+        if let Ok(mut guard) = self.auto_save_enabled.write() {
+            *guard = enabled;
+        }
+        // If write fails, just ignore
     }
 }
 
@@ -265,6 +258,7 @@ mod tests {
 }
 
 // Helper functions for testing with custom paths
+#[cfg(test)]
 fn save_state_at_path(state: &AppState, path: &PathBuf) -> Result<(), String> {
     let serialized = bincode::serialize(state)
         .map_err(|e| format!("Failed to serialize: {}", e))?;
@@ -275,6 +269,7 @@ fn save_state_at_path(state: &AppState, path: &PathBuf) -> Result<(), String> {
     Ok(())
 }
 
+#[cfg(test)]
 fn load_state_at_path(path: &PathBuf) -> Result<AppState, String> {
     if !path.exists() {
         return Ok(AppState::default());
@@ -292,11 +287,13 @@ fn load_state_at_path(path: &PathBuf) -> Result<AppState, String> {
     Ok(state)
 }
 
+#[cfg(test)]
 fn export_state_to_json(state: &AppState) -> Result<String, String> {
     serde_json::to_string_pretty(state)
         .map_err(|e| format!("Failed to serialize: {}", e))
 }
 
+#[cfg(test)]
 fn import_state_from_json(json: &str) -> Result<AppState, String> {
     serde_json::from_str(json)
         .map_err(|e| format!("Failed to deserialize: {}", e))

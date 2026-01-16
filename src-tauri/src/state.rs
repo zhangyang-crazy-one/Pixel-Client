@@ -128,6 +128,7 @@ pub struct McpServer {
 
 /// MCP Tool definition
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub struct McpTool {
     pub name: String,
     pub description: String,
@@ -188,6 +189,20 @@ impl Default for AppState {
 #[derive(Clone, Default)]
 pub struct SharedState {
     pub inner: Arc<RwLock<AppState>>,
+}
+
+/// Holder for AppHandle to enable file operations in commands
+#[derive(Clone)]
+pub struct AppHandleHolder(pub Arc<std::sync::Mutex<tauri::AppHandle>>);
+
+impl AppHandleHolder {
+    pub fn new(app_handle: tauri::AppHandle) -> Self {
+        Self(Arc::new(std::sync::Mutex::new(app_handle)))
+    }
+
+    pub fn get(&self) -> tauri::AppHandle {
+        self.0.lock().expect("Failed to lock AppHandle").clone()
+    }
 }
 
 impl SharedState {

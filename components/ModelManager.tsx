@@ -4,7 +4,7 @@ import { Theme, LLMProvider, LLMModel, ModelType, AceConfig, Language, ProviderA
 import { PixelButton, PixelInput, PixelCard, PixelSelect, PixelBadge } from './PixelUI';
 import { THEME_STYLES, TRANSLATIONS, getProviderIcon } from '../constants';
 import { Trash2, Plus, Zap, X, Cpu, Save, AlertTriangle, Edit, Smile, Star, Activity, Wifi, Loader2, Server, Terminal, Box, Play, PauseCircle } from 'lucide-react';
-import { ApiClient } from '../services/apiClient';
+import { apiClient } from '../services/apiClient';
 
 interface ModelManagerProps {
   theme: Theme;
@@ -78,13 +78,13 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
   // Fetch Data on Open
   useEffect(() => {
       const loadData = async () => {
-          const fetchedProviders = await ApiClient.getProviders();
+          const fetchedProviders = await apiClient.getProviders();
           onUpdateProviders(fetchedProviders);
           
-          const fetchedModels = await ApiClient.getAllModels();
+          const fetchedModels = await apiClient.getAllModels();
           onUpdateModels(fetchedModels);
 
-          const adapters = await ApiClient.getProviderAdapters();
+          const adapters = await apiClient.getProviderAdapters();
           setProviderAdapters(adapters);
 
           // Load Mascot Config
@@ -102,9 +102,9 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
   }, [activeTab]);
 
   const loadMcpData = async () => {
-      const servers = await ApiClient.Mcp.getServers();
+      const servers = await apiClient.Mcp.getServers();
       setMcpServers(servers);
-      const stats = await ApiClient.Mcp.getStats();
+      const stats = await apiClient.Mcp.getStats();
       setMcpStats(stats);
   };
 
@@ -126,11 +126,11 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
     if (!newProvider.name || !newProvider.baseUrl) return;
     try {
         if (editingProviderId) {
-            const updated = await ApiClient.updateProvider(editingProviderId, newProvider);
+            const updated = await apiClient.updateProvider(editingProviderId, newProvider);
             onUpdateProviders(providers.map(p => p.id === editingProviderId ? updated : p));
             setEditingProviderId(null);
         } else {
-            const created = await ApiClient.createProvider(newProvider);
+            const created = await apiClient.createProvider(newProvider);
             onUpdateProviders([...providers, created]);
         }
         setNewProvider({ type: 'custom', name: '', baseUrl: '', apiKey: '' });
@@ -154,7 +154,7 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
       };
 
       try {
-          const result = await ApiClient.testProviderConfiguration(payload);
+          const result = await apiClient.testProviderConfiguration(payload);
           setConnectionResult({
               success: result.success,
               message: result.message,
@@ -212,11 +212,11 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
 
     try {
         if (editingModelId) {
-            const updated = await ApiClient.updateModel({ ...modelPayload, id: editingModelId });
+            const updated = await apiClient.updateModel({ ...modelPayload, id: editingModelId });
             onUpdateModels(models.map(m => m.id === editingModelId ? updated : m));
             setEditingModelId(null);
         } else {
-            const created = await ApiClient.createModel(modelPayload);
+            const created = await apiClient.createModel(modelPayload);
             onUpdateModels([...models, created]);
         }
         
@@ -235,7 +235,7 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
   const handleDeleteProvider = async (id: string) => {
     if (!confirm(t.deleteProviderConfirm)) return;
     try {
-        await ApiClient.deleteProvider(id);
+        await apiClient.deleteProvider(id);
         onUpdateProviders(providers.filter(p => p.id !== id));
         onUpdateModels(models.filter(m => m.providerId !== id));
         if (editingProviderId === id) handleCancelProvider();
@@ -247,7 +247,7 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
   const handleDeleteModel = async (model: LLMModel) => {
       if (!confirm(t.deleteModelConfirm)) return;
       try {
-          await ApiClient.deleteModel(model.providerId, model.id);
+          await apiClient.deleteModel(model.providerId, model.id);
           onUpdateModels(models.filter(x => x.id !== model.id));
           if (editingModelId === model.id) handleCancelModel();
       } catch (e) {
@@ -274,7 +274,7 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
     };
 
     try {
-        const result = await ApiClient.validateModel(payload);
+        const result = await apiClient.validateModel(payload);
         setModelTestResult(result);
     } catch(e) {
         setModelTestResult({ success: false, message: 'Client Error', latency: 0 });
@@ -324,7 +324,7 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
               env: envObj
           };
 
-          await ApiClient.Mcp.registerServer(config);
+          await apiClient.Mcp.registerServer(config);
           await loadMcpData();
           setNewMcpServer({ id: '', command: '', args: '', env: '{}' });
       } catch(e) {
@@ -335,7 +335,7 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
   const handleDeleteMcpServer = async (id: string) => {
       if(!confirm('Delete MCP Server?')) return;
       try {
-          await ApiClient.Mcp.deleteServer(id);
+          await apiClient.Mcp.deleteServer(id);
           await loadMcpData();
           if (selectedMcpServer?.id === id) setSelectedMcpServer(null);
       } catch(e) {
@@ -345,7 +345,7 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
 
   const handleRestartMcpServer = async (id: string) => {
       try {
-          await ApiClient.Mcp.restartServer(id);
+          await apiClient.Mcp.restartServer(id);
           await loadMcpData();
       } catch(e) {
           alert(t.saveFailed);

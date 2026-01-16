@@ -8,9 +8,10 @@ use tauri::{Manager, State};
 // Core modules
 mod state;
 mod commands;
+mod services;
 
 // Re-export state types
-pub use state::{AppState, SharedState, Message, ChatSession, LLMProvider, LLMModel, AppConfig};
+pub use state::{AppState, SharedState, Message, ChatSession, LLMProvider, LLMModel, AppConfig, AppHandleHolder};
 
 // Legacy AppConfig - kept for backward compatibility with existing frontend
 // New code should use AppConfig from state module
@@ -25,6 +26,7 @@ pub struct LegacyAppConfig {
 // Legacy state for backward compatibility
 pub struct PixelState {
     pub config: Arc<Mutex<LegacyAppConfig>>,
+    pub app_handle: AppHandleHolder,
 }
 
 // Core commands
@@ -52,6 +54,33 @@ pub fn configure_app<R: tauri::Runtime>(builder: tauri::Builder<R>) -> tauri::Bu
             get_config,
             update_config,
             send_notification,
+            // Chat commands
+            commands::create_chat_session,
+            commands::add_message_to_session,
+            commands::get_session_messages,
+            commands::delete_chat_session,
+            commands::get_active_sessions,
+            commands::stream_chat_completions,
+            commands::cancel_chat_stream,
+            // Excalidraw commands
+            commands::save_excalidraw_scene,
+            commands::load_excalidraw_scene,
+            commands::list_excalidraw_scenes,
+            commands::delete_excalidraw_scene,
+            commands::export_excalidraw_scene,
+            commands::import_excalidraw_scene,
+            // Renderer commands
+            services::renderer_cmd_wrapper::render_markdown,
+            services::renderer_cmd_wrapper::process_custom_syntax,
+            services::renderer_cmd_wrapper::highlight_code_sync,
+            // Persistence commands
+            services::persistence_cmd_wrapper::save_state,
+            services::persistence_cmd_wrapper::load_state,
+            services::persistence_cmd_wrapper::create_backup,
+            services::persistence_cmd_wrapper::get_state_size,
+            services::persistence_cmd_wrapper::export_state_json,
+            services::persistence_cmd_wrapper::import_state_json,
+            services::persistence_cmd_wrapper::clear_state,
         ])
 }
 
@@ -63,6 +92,7 @@ pub fn initialize_state<R: tauri::Runtime>(app: &tauri::AppHandle) {
             active_model: "gpt-4".to_string(),
             provider: "openai".to_string(),
         })),
+        app_handle: AppHandleHolder::new(app.clone()),
     };
     app.manage(state);
 }

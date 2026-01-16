@@ -48,7 +48,7 @@ static LANGUAGE_ALIASES: Lazy<HashMap<String, String>> = Lazy::new(|| {
 });
 
 /// Render Markdown to HTML with syntax highlighting
-#[tauri::command]
+#[allow(dead_code)]
 pub fn render_markdown(markdown_input: String) -> Result<String, String> {
     let parser = Parser::new_ext(&markdown_input, get_markdown_options());
     
@@ -98,16 +98,14 @@ fn process_markdown_events(events: &mut [Event], output: &mut String) {
             Event::Text(text) => {
                 if in_code_block {
                     current_code.push_str(text);
+                } else if last_event_was_code {
+                    let highlighted = highlight_code(&current_lang, &current_code);
+                    output.push_str(&highlighted);
+                    in_code_block = false;
+                    last_event_was_code = false;
                 } else {
-                    if last_event_was_code {
-                        let highlighted = highlight_code(&current_lang, &current_code);
-                        output.push_str(&highlighted);
-                        in_code_block = false;
-                        last_event_was_code = false;
-                    } else {
-                        let escaped = escape_html(text);
-                        output.push_str(&escaped);
-                    }
+                    let escaped = escape_html(text);
+                    output.push_str(&escaped);
                 }
             }
             Event::End(TagEnd::CodeBlock) => {
@@ -132,10 +130,10 @@ fn process_markdown_events(events: &mut [Event], output: &mut String) {
                 last_event_was_code = false;
             }
             Event::SoftBreak => {
-                output.push_str(" ");
+                output.push(' ');
             }
             Event::HardBreak => {
-                output.push_str("\n");
+                output.push('\n');
             }
             Event::Rule => {
                 output.push_str("<hr />\n");
@@ -148,19 +146,20 @@ fn process_markdown_events(events: &mut [Event], output: &mut String) {
 }
 
 /// Highlight code using syntect
+#[allow(unused_variables)]
 fn highlight_code(language: &str, code: &str) -> String {
     let lang = LANGUAGE_ALIASES
         .get(language.to_lowercase().as_str())
         .map(|s| s.as_str())
         .unwrap_or(language);
     
-    let syntax = if lang.is_empty() {
+    let syntax_ref = if lang.is_empty() {
         SYNTAX_SET.find_syntax_by_extension("txt")
     } else {
         SYNTAX_SET.find_syntax_by_token(lang)
     };
     
-    let syntax = match syntax {
+    let _syntax = match syntax_ref {
         Some(s) => s,
         None => SYNTAX_SET.find_syntax_by_extension("txt")
             .unwrap_or_else(|| SYNTAX_SET.syntaxes().first().unwrap()),
@@ -201,12 +200,12 @@ fn push_tag(output: &mut String, tag: &Tag) {
         Tag::Emphasis => output.push_str("<em>"),
         Tag::Strong => output.push_str("<strong>"),
         Tag::Strikethrough => output.push_str("<del>"),
-        Tag::Link { dest_url, title: _, id: _ } => {
+        Tag::Link { dest_url, title: _, id: _, .. } => {
             output.push_str("<a href=\"");
             output.push_str(&escape_html(dest_url));
             output.push_str("\">");
         }
-        Tag::Image { dest_url, title: _, id: _ } => {
+        Tag::Image { dest_url, title: _, id: _, .. } => {
             output.push_str("<img src=\"");
             output.push_str(&escape_html(dest_url));
             output.push_str("\" />");
@@ -228,7 +227,7 @@ fn push_tag(output: &mut String, tag: &Tag) {
 fn push_tag_end(output: &mut String, tag_end: &TagEnd) {
     match tag_end {
         TagEnd::Paragraph => output.push_str("</p>"),
-        TagEnd::Heading { level: _, id: _, classes: _, attrs: _ } => {
+        TagEnd::Heading(_) => {
             output.push_str("</h>");
         }
         TagEnd::BlockQuote => output.push_str("</blockquote>"),
@@ -250,7 +249,7 @@ fn push_tag_end(output: &mut String, tag_end: &TagEnd) {
 }
 
 /// Process custom markdown extensions (thinking tags, tool actions)
-#[tauri::command]
+#[allow(dead_code)]
 pub fn process_custom_syntax(markdown_input: String) -> Result<String, String> {
     let mut result = markdown_input;
     
@@ -270,7 +269,7 @@ pub fn process_custom_syntax(markdown_input: String) -> Result<String, String> {
 }
 
 /// Highlight code synchronously (for non-Tauri use)
-#[tauri::command]
+#[allow(dead_code)]
 pub fn highlight_code_sync(code: String, language: String) -> Result<String, String> {
     Ok(highlight_code(&language, &code))
 }

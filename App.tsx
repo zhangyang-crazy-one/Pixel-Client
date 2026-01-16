@@ -7,7 +7,7 @@ import { ModelManager } from './components/ModelManager';
 import { Chat } from './components/Chat';
 import { Mascot } from './components/Mascot';
 import { Settings, Search, ChevronLeft, ChevronRight, Trash2, RefreshCcw, AlertCircle, MessageSquare, MessageSquareOff } from 'lucide-react';
-import { ApiClient } from './services/apiClient';
+import { apiClient } from './services/apiClient';
 import { streamChatResponse, fetchMascotComment } from './services/llmService';
 
 const App: React.FC = () => {
@@ -58,9 +58,9 @@ const App: React.FC = () => {
 
     const initData = async () => {
         try {
-            const fetchedProviders = await ApiClient.getProviders();
+            const fetchedProviders = await apiClient.getProviders();
             setProviders(fetchedProviders);
-            const fetchedModels = await ApiClient.getAllModels();
+            const fetchedModels = await apiClient.getAllModels();
             setModels(fetchedModels);
             
             if (fetchedProviders.length === 0 && fetchedModels.length === 0) {
@@ -84,18 +84,18 @@ const App: React.FC = () => {
   useEffect(() => {
     const loadHistory = async () => {
         if (!activeSessionId) return;
-        const fetchedMessages = await ApiClient.getSessionMessages(activeSessionId);
+        const fetchedMessages = await apiClient.getSessionMessages(activeSessionId);
         setMessages(fetchedMessages || []);
     };
     loadHistory();
   }, [activeSessionId]);
 
   const refreshSessions = async () => {
-      const apiSessions = await ApiClient.getActiveSessions(-1);
-      const mappedSessions: ChatSession[] = apiSessions.map(s => ({
-          id: s.sessionId,
-          title: `Session ${s.sessionId.substring(0,6)}`,
-          lastUpdated: s.lastActivityAt,
+      const apiSessions = await apiClient.getActiveSessions(-1);
+      const mappedSessions: ChatSession[] = apiSessions.map((s: { id: string; title?: string; updated_at?: bigint | number }) => ({
+          id: s.id,
+          title: s.title || `Session ${s.id.substring(0,6)}`,
+          lastUpdated: s.updated_at ? (typeof s.updated_at === 'bigint' ? Number(s.updated_at) : s.updated_at as number) : Date.now(),
           messages: []
       }));
       setSessions(mappedSessions);
@@ -186,7 +186,7 @@ const App: React.FC = () => {
   const confirmDeleteSession = async () => {
       if (!sessionToDelete) return;
       try {
-          await ApiClient.deleteSession(sessionToDelete);
+          await apiClient.deleteSession(sessionToDelete);
           const newSessions = sessions.filter(s => s.id !== sessionToDelete);
           setSessions(newSessions);
           if (activeSessionId === sessionToDelete) {
@@ -207,7 +207,7 @@ const App: React.FC = () => {
           abortControllerRef.current = null;
       }
       if (currentRequestId) {
-          try { await ApiClient.interruptRequest(currentRequestId); } catch(e) { console.error("Failed to interrupt", e); }
+           try { await apiClient.interruptRequest(currentRequestId); } catch(e) { console.error("Failed to interrupt", e); }
       }
       setIsStreaming(false);
       setCurrentRequestId(null);
