@@ -6,7 +6,7 @@
 
 > 基于 Tauri v2 + React 的 AI 聊天应用客户端
 
-[English](README.md) | 简体中文
+[English](README_EN.md) | 简体中文
 
 ## 简介
 
