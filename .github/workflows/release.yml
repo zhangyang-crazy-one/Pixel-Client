@@ -44,8 +44,8 @@ jobs:
             });
             console.log('Created release:', release.html_url);
             return release;
-          env:
-            GITHUB_TAG: ${{ github.ref_name }}
+        env:
+          GITHUB_TAG: ${{ github.ref_name }}
 
   # ============================================
   # Build - Linux
