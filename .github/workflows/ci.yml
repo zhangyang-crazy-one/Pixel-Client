@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, master]
+    branches: [main, master, feature/tauri-port]
     paths:
       - 'src/**'
       - 'services/**'
@@ -23,6 +23,16 @@ on:
   pull_request:
     branches: [main, master]
 
+# Cancel in-progress runs for the same workflow/branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Explicit permissions for security
+permissions:
+  contents: read
+  actions: read
+
 env:
   BUN_VERSION: '1.2.23'
 
@@ -32,7 +42,7 @@ jobs:
   # ============================================
   unit-test:
     name: Unit Tests (Frontend)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -69,7 +79,7 @@ jobs:
   # ============================================
   type-check:
     name: Type Check
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -96,7 +106,7 @@ jobs:
   # ============================================
   integration-test:
     name: Integration Tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -133,7 +143,7 @@ jobs:
   # ============================================
   rust-test:
     name: Rust Unit Tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -153,14 +163,14 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            webkit2gtk-4.1 \
-            libsoup-3.0 \
-            libjavascriptcoregtk-4.1 \
-            libwebkit2gtk-4.1 \
-            libappindicator3-1 \
+            libwebkit2gtk-4.1-dev \
+            libsoup-3.0-dev \
+            libjavascriptcoregtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
             libasound2-dev \
             libudev-dev \
-            libgirepository1.0-dev \
+            libssl-dev \
             build-essential \
             pkg-config
 
@@ -184,7 +194,7 @@ jobs:
           - os: windows-latest
             target: x64
             artifact_suffix: 'x64'
-          - os: ubuntu-latest
+          - os: ubuntu-22.04
             target: x64
             artifact_suffix: 'x64'
           - os: macos-14
@@ -218,22 +228,27 @@ jobs:
       # ----------------------------------------
       # Linux Build
       # ----------------------------------------
-      - name: Build Tauri app (Linux)
+      - name: Install Tauri Dependencies (Linux)
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            webkit2gtk-4.1 \
-            libsoup-3.0 \
-            libjavascriptcoregtk-4.1 \
-            libwebkit2gtk-4.1 \
-            libappindicator3-1 \
+            libwebkit2gtk-4.1-dev \
+            libsoup-3.0-dev \
+            libjavascriptcoregtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
             libasound2-dev \
             libudev-dev \
-            libgirepository1.0-dev \
+            libssl-dev \
             build-essential \
             pkg-config
-          bun run tauri build
+
+      - name: Build Tauri app (Linux)
+        if: runner.os == 'Linux'
+        run: bun run tauri build
+        env:
+          CI: true
 
       - name: Upload Linux artifacts
         if: runner.os == 'Linux'
@@ -250,6 +265,8 @@ jobs:
       - name: Build Tauri app (Windows)
         if: runner.os == 'Windows'
         run: bun run tauri build
+        env:
+          CI: true
 
       - name: Upload Windows artifacts
         if: runner.os == 'Windows'
@@ -269,6 +286,8 @@ jobs:
           # Install Rust targets for macOS
           rustup target add ${{ matrix.target }}-apple-darwin
           bun run tauri build --target ${{ matrix.target }}-apple-darwin
+        env:
+          CI: true
 
       - name: Upload macOS artifacts
         if: runner.os == 'macOS'
@@ -284,7 +303,7 @@ jobs:
   # ============================================
   merge-artifacts:
     name: Merge Artifacts
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs: build
     if: always()
     steps:
