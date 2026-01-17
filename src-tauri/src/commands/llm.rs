@@ -306,8 +306,7 @@ pub async fn stream_chat_completions_with_thinking(
                 let text = String::from_utf8_lossy(&data);
 
                 for line in text.lines() {
-                    if line.starts_with("data: ") {
-                        let data_str = &line[6..];
+                    if let Some(data_str) = line.strip_prefix("data: ") {
 
                         if data_str == "[DONE]" {
                             // Parse reasoning from accumulated content

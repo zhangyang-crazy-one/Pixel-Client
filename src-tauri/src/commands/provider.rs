@@ -276,6 +276,7 @@ pub fn create_model(
 /// Update an existing model
 #[tauri::command]
 #[allow(dead_code)]
+#[allow(clippy::too_many_arguments)]
 pub fn update_model(
     shared_state: State<'_, SharedState>,
     model_id: String,

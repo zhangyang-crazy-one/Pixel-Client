@@ -446,7 +446,7 @@ mod tests {
     #[test]
     fn test_skill_execution_array_operations() {
         // Test array operations
-        let arr = vec![1, 2, 3, 4, 5];
+        let arr = [1, 2, 3, 4, 5];
         let sum: i32 = arr.iter().sum();
         assert_eq!(sum, 15);
         
@@ -476,7 +476,7 @@ mod tests {
         use state::{SkillParameter, SkillParameterType};
 
         // Test parameter schema validation
-        let params = vec![
+        let params = [
             SkillParameter {
                 name: "name".to_string(),
                 param_type: SkillParameterType::String,

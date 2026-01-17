@@ -335,6 +335,7 @@ pub fn create_skill(
 /// Update an existing skill
 #[tauri::command]
 #[allow(dead_code)]
+#[allow(clippy::too_many_arguments)]
 pub fn update_skill(
     shared_state: State<'_, SharedState>,
     skill_id: String,
@@ -639,9 +640,7 @@ pub fn reindex_skills(
     shared_state: State<'_, SharedState>,
 ) -> Result<usize, String> {
     let count = shared_state.read(|state| {
-        // Update timestamps for all skills
-        let count = state.skills.len();
-        count
+        state.skills.len()
     });
     
     // Update all skill timestamps to mark them as reindexed
