@@ -1,6 +1,7 @@
 import React, { ReactNode } from 'react';
 import ReactDOM from 'react-dom/client';
-import App from './App';
+import AppWrapper from './components/AppWrapper';
+import './src/index.css';
 
 interface ErrorBoundaryProps {
   children?: ReactNode;
@@ -67,7 +68,7 @@ const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
     <GlobalErrorBoundary>
-      <App />
+      <AppWrapper />
     </GlobalErrorBoundary>
   </React.StrictMode>
 );

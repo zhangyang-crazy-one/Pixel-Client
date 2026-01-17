@@ -1,0 +1,347 @@
+@import "tailwindcss";
+
+/* ========================================
+   Custom Titlebar Styles (Tauri)
+   ======================================== */
+
+/* Enable dragging for elements with data-tauri-drag-region */
+*[data-tauri-drag-region] {
+  -webkit-app-region: drag;
+  app-region: drag;
+}
+
+/* Disable dragging for interactive elements inside drag region */
+*[data-tauri-drag-region] button,
+*[data-tauri-drag-region] input,
+*[data-tauri-drag-region] select,
+*[data-tauri-drag-region] a {
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+}
+
+/* Custom Titlebar Container */
+.custom-titlebar {
+  display: flex;
+  align-items: center;
+  height: 40px;
+  min-height: 40px;
+  background: linear-gradient(180deg, #1a1a2e 0%, #16162a 100%);
+  border-bottom: 2px solid #2d2b40;
+  padding: 0 8px;
+  user-select: none;
+  position: relative;
+  z-index: 9999;
+}
+
+/* Titlebar Title Section */
+.titlebar-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-left: 4px;
+}
+
+.titlebar-icon {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.titlebar-text {
+  font-family: 'VT323', 'Inter', monospace;
+  font-size: 16px;
+  color: #ff00ff;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+/* Titlebar Spacer (fills remaining space) */
+.titlebar-spacer {
+  flex: 1;
+}
+
+/* Window Control Buttons */
+.titlebar-controls {
+  display: flex;
+  gap: 0;
+}
+
+.titlebar-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 40px;
+  background: transparent;
+  border: none;
+  color: #a0a0a0;
+  cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+.titlebar-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+.titlebar-button:active {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* Minimize Button */
+.titlebar-minimize:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Maximize Button */
+.titlebar-maximize:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Close Button (Special styling - red on hover) */
+.titlebar-close:hover {
+  background: #e81123;
+  color: #ffffff;
+}
+
+.titlebar-close:active {
+  background: #c50f1f;
+}
+
+/* Pixel theme adjustments */
+.theme-pixel .custom-titlebar {
+  border-bottom: 4px solid #ff00ff;
+  box-shadow: inset 0 -2px 0 0 #00ffff;
+}
+
+.theme-pixel .titlebar-button {
+  border: none;
+}
+
+.theme-pixel .titlebar-button:hover {
+  background: #ff00ff;
+  color: #000000;
+}
+
+.theme-pixel .titlebar-close:hover {
+  background: #ff0000;
+  color: #ffffff;
+}
+
+/* Modern theme adjustments */
+.theme-modern .custom-titlebar {
+  background: linear-gradient(180deg, #f5f5f5 0%, #e8e8e8 100%);
+  border-bottom: 1px solid #d0d0d0;
+}
+
+.theme-modern .titlebar-text {
+  font-family: 'Inter', sans-serif;
+  color: #333333;
+  text-transform: none;
+  font-weight: 600;
+}
+
+.theme-modern .titlebar-button {
+  color: #666666;
+}
+
+.theme-modern .titlebar-button:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: #333333;
+}
+
+.theme-modern .titlebar-close:hover {
+  background: #e81123;
+  color: #ffffff;
+}
+
+/* ========================================
+   Pixel UI Theme Customizations
+   ======================================== */
+.theme-pixel {
+  --font-pixel-verse: 'VT323', 'Noto Sans SC', monospace;
+}
+
+.theme-modern {
+  font-family: 'Inter', 'Noto Sans SC', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Custom Scrollbar - Adaptive */
+.theme-pixel ::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+.theme-pixel ::-webkit-scrollbar-track {
+  background: #2d2b40;
+}
+
+.theme-pixel ::-webkit-scrollbar-thumb {
+  background: #ff00ff;
+  border: 2px solid #0d0c1d;
+  box-shadow: inset -2px -2px 0px rgba(0,0,0,0.2);
+}
+
+.theme-modern ::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.theme-modern ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.theme-modern ::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.5);
+  border-radius: 3px;
+}
+
+/* Pixel Art Utilities */
+.pixel-border {
+  box-shadow: -2px 0 0 0 black, 2px 0 0 0 black, 0 -2px 0 0 black, 0 2px 0 0 black;
+}
+
+.pixel-shadow {
+  box-shadow: 4px 4px 0px 0px rgba(0,0,0,1);
+}
+
+.pixel-shadow-sm {
+  box-shadow: 2px 2px 0px 0px rgba(0,0,0,1);
+}
+
+.pixel-shadow-hover:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0px 0px rgba(0,0,0,1);
+}
+
+.pixel-shadow-active:active {
+  transform: translate(2px, 2px);
+  box-shadow: 0px 0px 0px 0px rgba(0,0,0,1);
+}
+
+/* Animations */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-4px); }
+}
+
+.animate-float {
+  animation: float 3s steps(4) infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.animate-cursor {
+  animation: blink 1s steps(2) infinite;
+}
+
+.scanline-effect::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(to bottom, transparent 50%, rgba(0, 0, 0, 0.05) 51%);
+  background-size: 100% 4px;
+  pointer-events: none;
+  z-index: 50;
+}
+
+.rainbow-mode {
+  animation: rainbow-cycle 2s linear infinite;
+}
+
+@keyframes rainbow-cycle {
+  0% { filter: hue-rotate(0deg); }
+  100% { filter: hue-rotate(360deg); }
+}
+
+/* Markdown Styling */
+.markdown-body p {
+  margin-bottom: 0.75em;
+}
+
+.markdown-body p:last-child {
+  margin-bottom: 0;
+}
+
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3 {
+  font-weight: 700;
+  margin-top: 1em;
+  margin-bottom: 0.5em;
+  line-height: 1.2;
+}
+
+.theme-pixel .markdown-body code {
+  font-family: 'VT323', monospace;
+  background: rgba(0,0,0,0.1);
+  padding: 0.1em 0.3em;
+  border-radius: 2px;
+  font-size: 1.1em;
+}
+
+.theme-modern .markdown-body code {
+  font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+  background: rgba(125, 125, 125, 0.1);
+  padding: 0.2em 0.4em;
+  border-radius: 4px;
+  font-size: 0.85em;
+}
+
+/* Base Font Settings */
+body {
+  margin: 0;
+  padding: 0;
+}
+
+.theme-pixel {
+  font-family: 'VT323', 'Noto Sans SC', monospace;
+  image-rendering: pixelated;
+}
+
+/* ========================================
+   Excalidraw Wrapper Styles
+   ======================================== */
+.excalidraw-wrapper {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.excalidraw-wrapper .excalidraw {
+  width: 100%;
+  height: 100%;
+}
+
+/* Ensure Excalidraw fills its container */
+.excalidraw-wrapper .excalidraw .excalidraw-container {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Fix for Excalidraw canvas sizing */
+.excalidraw .App-menu_top {
+  z-index: 10;
+}
+
+/* Custom toolbar styles */
+.excalidraw-toolbar {
+  flex-shrink: 0;
+}
+
+.excalidraw-toolbar button:hover {
+  opacity: 0.8;
+}
+
+.excalidraw-toolbar button:active {
+  transform: scale(0.98);
+}

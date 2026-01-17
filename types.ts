@@ -5,7 +5,11 @@ export enum Theme {
   MODERN_DARK = 'modern_dark',
   MODERN_LIGHT = 'modern_light',
   CLAY = 'clay',
-  BIOLUMINESCENCE = 'bioluminescence'
+  BIOLUMINESCENCE = 'bioluminescence',
+  SHADCN_DARK = 'shadcn_dark',
+  SHADCN_LIGHT = 'shadcn_light',
+  CYBER = 'cyber',
+  SUNSET = 'sunset'
 }
 
 export type Language = 'en' | 'zh' | 'ja';
@@ -47,10 +51,10 @@ export interface ProviderTestResponse {
   success: boolean;
   message: string;
   latency?: number;
-  details?: any;
+  details?: unknown;
 }
 
-export type ModelType = 'chat' | 'embedding' | 'rerank' | 'multimodal';
+export type ModelType = 'chat' | 'embedding' | 'rerank' | 'multimodal' | 'nlp';
 
 export interface LLMModel {
   id: string;
@@ -75,7 +79,7 @@ export interface AceConfig {
 export interface McpTool {
   name: string;
   description: string;
-  inputSchema?: any;
+  inputSchema?: Record<string, unknown>;
 }
 
 export interface McpServerStatus {
@@ -123,14 +127,14 @@ export interface ApiSession {
   status: string;
   createdAt: number;
   lastActivityAt: number;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
 }
 
 export interface SessionHistory {
   sessionState: ApiSession;
   messages?: Message[]; // Added to support history retrieval
-  telemetry: any[];
-  directives: any[];
+  telemetry: Record<string, unknown>[];
+  directives: Record<string, unknown>[];
 }
 
 export interface AppState {

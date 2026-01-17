@@ -5,7 +5,6 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PixelVerse Chat</title>
-    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <!-- Inter for Modern, VT323 for Pixel -->
@@ -21,114 +20,6 @@
 
     <!-- PixelVerse Robot Favicon -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'><rect width='16' height='16' fill='%23000000'/><rect x='1' y='1' width='14' height='14' fill='%232D2B40'/><rect x='1' y='4' width='14' height='5' fill='%23FF00FF'/><rect x='3' y='5' width='3' height='3' fill='%2300FFFF'/><rect x='10' y='5' width='3' height='3' fill='%2300FFFF'/><rect x='4' y='12' width='8' height='1' fill='%23FFFFFF'/></svg>" />
-    <style>
-      /* Custom Scrollbar - Adaptive */
-      .theme-pixel ::-webkit-scrollbar {
-        width: 12px;
-        height: 12px;
-      }
-      .theme-pixel ::-webkit-scrollbar-track {
-        background: #2d2b40;
-      }
-      .theme-pixel ::-webkit-scrollbar-thumb {
-        background: #ff00ff;
-        border: 2px solid #0d0c1d;
-        box-shadow: inset -2px -2px 0px rgba(0,0,0,0.2);
-      }
-
-      .theme-modern ::-webkit-scrollbar {
-        width: 6px;
-        height: 6px;
-      }
-      .theme-modern ::-webkit-scrollbar-track {
-        background: transparent;
-      }
-      .theme-modern ::-webkit-scrollbar-thumb {
-        background: rgba(156, 163, 175, 0.5);
-        border-radius: 3px;
-      }
-      
-      /* Base Font Settings */
-      body {
-        margin: 0;
-        padding: 0;
-      }
-      
-      .theme-pixel {
-        font-family: 'VT323', 'Noto Sans SC', monospace;
-        image-rendering: pixelated;
-        cursor: url('data:image/svg+xml;utf8,<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2 2H14V4H16V6H18V12H16V14H14V16H12V18H10V22H2V2H2ZM4 4V20H8V16H10V14H12V12H14V8H12V6H10V4H4Z" fill="white"/><path d="M4 4H10V6H12V8H14V12H12V14H10V16H8V20H4V4Z" fill="black"/></svg>'), auto;
-      }
-
-      .theme-modern {
-        font-family: 'Inter', 'Noto Sans SC', sans-serif;
-        -webkit-font-smoothing: antialiased;
-      }
-
-      /* Markdown Styling */
-      .markdown-body p { margin-bottom: 0.75em; }
-      .markdown-body p:last-child { margin-bottom: 0; }
-      .markdown-body h1, .markdown-body h2, .markdown-body h3 {
-        font-weight: 700; margin-top: 1em; margin-bottom: 0.5em; line-height: 1.2;
-      }
-      
-      .theme-pixel .markdown-body code {
-        font-family: 'VT323', monospace;
-        background: rgba(0,0,0,0.1);
-        padding: 0.1em 0.3em;
-        border-radius: 2px;
-        font-size: 1.1em;
-      }
-
-      .theme-modern .markdown-body code {
-        font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
-        background: rgba(125, 125, 125, 0.1);
-        padding: 0.2em 0.4em;
-        border-radius: 4px;
-        font-size: 0.85em;
-      }
-
-      /* Pixel Art Utilities */
-      .pixel-border {
-        box-shadow: -2px 0 0 0 black, 2px 0 0 0 black, 0 -2px 0 0 black, 0 2px 0 0 black;
-      }
-      
-      .pixel-shadow { box-shadow: 4px 4px 0px 0px rgba(0,0,0,1); }
-      .pixel-shadow-sm { box-shadow: 2px 2px 0px 0px rgba(0,0,0,1); }
-      .pixel-shadow-hover:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0px 0px rgba(0,0,0,1); }
-      .pixel-shadow-active:active { transform: translate(2px, 2px); box-shadow: 0px 0px 0px 0px rgba(0,0,0,1); }
-
-      /* Animations */
-      @keyframes float {
-        0%, 100% { transform: translateY(0px); }
-        50% { transform: translateY(-4px); }
-      }
-      .animate-float { animation: float 3s steps(4) infinite; }
-
-      @keyframes blink {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0; }
-      }
-      .animate-cursor { animation: blink 1s steps(2) infinite; }
-
-      .scanline-effect::after {
-        content: "";
-        position: absolute;
-        top: 0; left: 0; right: 0; bottom: 0;
-        background: linear-gradient(to bottom, transparent 50%, rgba(0, 0, 0, 0.05) 51%);
-        background-size: 100% 4px;
-        pointer-events: none;
-        z-index: 50;
-      }
-
-      .rainbow-mode {
-        animation: rainbow-cycle 2s linear infinite;
-      }
-      @keyframes rainbow-cycle {
-        0% { filter: hue-rotate(0deg); }
-        100% { filter: hue-rotate(360deg); }
-      }
-    </style>
   <script type="importmap">
 {
   "imports": {
@@ -152,5 +43,6 @@
 </head>
   <body>
     <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
   </body>
 </html>
