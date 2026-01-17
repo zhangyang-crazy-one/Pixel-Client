@@ -32,6 +32,18 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "linux": {
+      "deb": true,
+      "appimage": true,
+      "rpm": true
+    },
+    "windows": {
+      "nsis": true,
+      "wix": true
+    },
+    "macOS": {
+      "dmg": true
+    },
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",

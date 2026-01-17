@@ -103,11 +103,14 @@ jobs:
         env:
           CI: true
 
+      - name: List build artifacts
+        run: ls -la src-tauri/target/release/bundle/ 2>/dev/null || echo "No bundle directory"
+
       - name: Upload Linux x64 artifacts
         uses: actions/upload-artifact@v4
         with:
           name: linux-x64
-          path: src-tauri/target/release/bundle/**
+          path: src-tauri/target/release/bundle/
           retention-days: 7
 
   # ============================================
@@ -159,6 +162,8 @@ jobs:
             bun run build
             bun run tauri build --target aarch64-unknown-linux-gnu
 
+            ls -la src-tauri/target/release/bundle/
+
       - name: Get app version
         run: echo "APP_VERSION=$(jq -r .version src-tauri/tauri.conf.json)" >> $GITHUB_ENV
 
@@ -166,7 +171,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: linux-arm64
-          path: src-tauri/target/release/bundle/**
+          path: src-tauri/target/release/bundle/
           retention-days: 7
 
   # ============================================
@@ -206,11 +211,14 @@ jobs:
         env:
           CI: true
 
+      - name: List build artifacts
+        run: ls -la src-tauri/target/release/bundle/ 2>/dev/null || echo "No bundle directory"
+
       - name: Upload Windows artifacts
         uses: actions/upload-artifact@v4
         with:
           name: windows-x64
-          path: src-tauri/target/release/bundle/**
+          path: src-tauri/target/release/bundle/
           retention-days: 7
 
   # ============================================
