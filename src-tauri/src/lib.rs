@@ -338,9 +338,6 @@ mod tests {
 
     #[test]
     fn test_mcp_json_rpc_request_format() {
-        use std::collections::HashMap;
-        use std::sync::atomic::{AtomicU64, Ordering};
-
         // Test that JSON-RPC request has correct format
         let id = 1u64;
         let method = "tools/list";
@@ -415,9 +412,6 @@ mod tests {
     #[test]
     fn test_skill_execution_simple_return() {
         // Test basic skill code execution
-        let code = "return 42;";
-        let params = serde_json::json!({});
-        
         // The skill should return a number
         let expected = 42i64;
         assert_eq!(expected, 42);
@@ -476,7 +470,7 @@ mod tests {
         use state::{SkillParameter, SkillParameterType};
 
         // Test parameter schema validation
-        let params = [
+        let _params = [
             SkillParameter {
                 name: "name".to_string(),
                 param_type: SkillParameterType::String,
@@ -516,8 +510,8 @@ mod tests {
 
     #[test]
     fn test_state_operations() {
-        use state::{SharedState, McpServer, Skill};
-        use std::collections::HashMap;
+        // Test state operations
+        assert!(true);
 
         // Test initial state
         let initial_state = SharedState::new();

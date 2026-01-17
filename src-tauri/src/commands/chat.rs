@@ -10,18 +10,10 @@ use crate::state::{SharedState, Message, ChatSession, PixelState, ReasoningMessa
 use uuid::Uuid;
 
 /// Streaming state tracker
+#[derive(Default)]
 struct StreamingState {
     is_streaming: bool,
     accumulated_content: String,
-}
-
-impl Default for StreamingState {
-    fn default() -> Self {
-        Self {
-            is_streaming: false,
-            accumulated_content: String::new(),
-        }
-    }
 }
 
 /// Create a new chat session
@@ -191,8 +183,7 @@ pub async fn stream_chat_completions(
 
                 // Parse SSE format (data: {...})
                 for line in text.lines() {
-                    if line.starts_with("data: ") {
-                        let data_str = &line[6..];
+                    if let Some(data_str) = line.strip_prefix("data: ") {
 
                         if data_str == "[DONE]" {
                             // Stream complete

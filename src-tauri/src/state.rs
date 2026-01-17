@@ -168,17 +168,34 @@ pub struct McpServerManager {
 }
 
 /// Thinking depth levels for Deep Thinking mode
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS, Default)]
 #[ts(export)]
 pub enum ThinkingDepth {
+    #[default]
     Surface,    // 浅层思考 - 标准回复
     Moderate,   // 中等思考 - 扩展推理
     Deep,       // 深度思考 - 详细步骤分析
 }
 
-impl Default for ThinkingDepth {
-    fn default() -> Self {
-        ThinkingDepth::Surface
+impl ThinkingDepth {
+    /// Create a new ReasoningMessage from scratch
+    pub fn new(id: String, role: String, content: String) -> Self {
+        Self {
+            id,
+            role,
+            content,
+            reasoning_content: None,
+            reasoning_blocks: Vec::new(),
+            timestamp: Utc::now().timestamp_millis() as u64,
+            model_id: None,
+            token_usage: None,
+            is_deep_thinking: false,
+        }
+    }
+
+    /// Check if this message has reasoning content
+    pub fn has_reasoning(&self) -> bool {
+        self.reasoning_content.is_some() || !self.reasoning_blocks.is_empty()
     }
 }
 
@@ -257,6 +274,7 @@ pub struct ReasoningMessage {
 
 impl ReasoningMessage {
     /// Create a new ReasoningMessage from scratch
+    #[allow(dead_code)]
     pub fn new(id: String, role: String, content: String) -> Self {
         Self {
             id,
@@ -272,6 +290,7 @@ impl ReasoningMessage {
     }
 
     /// Check if this message has reasoning content
+    #[allow(dead_code)]
     pub fn has_reasoning(&self) -> bool {
         self.reasoning_content.is_some() || !self.reasoning_blocks.is_empty()
     }
@@ -317,7 +336,7 @@ pub struct McpTool {
 }
 
 /// ACE Agent configuration
-#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS, Default)]
 #[ts(export)]
 pub struct AceConfig {
     pub fast_model_id: String,
