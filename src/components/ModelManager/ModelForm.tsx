@@ -51,6 +51,7 @@ export function ModelForm({
     dimensions: '',
     is_default: false,
   });
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (model) {
@@ -80,21 +81,44 @@ export function ModelForm({
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    setError(null);
+    
+    // Validate numeric fields
+    const numContextLength = formData.context_length 
+      ? parseInt(formData.context_length, 10) 
+      : null;
+    if (formData.context_length && (isNaN(numContextLength!) || numContextLength! <= 0)) {
+      setError('Context length must be a valid positive number');
+      return;
+    }
+    
+    const numMaxTokens = formData.max_tokens 
+      ? parseInt(formData.max_tokens, 10) 
+      : null;
+    if (formData.max_tokens && (isNaN(numMaxTokens!) || numMaxTokens! <= 0)) {
+      setError('Max tokens must be a valid positive number');
+      return;
+    }
+    
+    const numDimensions = formData.dimensions
+      ? parseInt(formData.dimensions, 10)
+      : null;
+    if (formData.dimensions && (isNaN(numDimensions!) || numDimensions! <= 0)) {
+      setError('Dimensions must be a valid positive number');
+      return;
+    }
+    
     await onSave({
       provider_id: formData.provider_id,
       name: formData.name,
       model_id: formData.model_id,
       model_type: formData.model_type,
-      context_length: formData.context_length
-        ? parseInt(formData.context_length, 10)
-        : null,
-      max_tokens: formData.max_tokens ? parseInt(formData.max_tokens, 10) : null,
+      context_length: numContextLength,
+      max_tokens: numMaxTokens,
       temperature: formData.temperature
         ? parseFloat(formData.temperature)
         : null,
-      dimensions: formData.dimensions
-        ? parseInt(formData.dimensions, 10)
-        : null,
+      dimensions: numDimensions,
       is_default: formData.is_default,
     });
   };
@@ -222,6 +246,10 @@ export function ModelForm({
           Set as default model
         </label>
       </div>
+
+      {error && (
+        <div className="text-red-500 text-sm">{error}</div>
+      )}
 
       <div className="flex justify-end gap-2">
         <button

@@ -3,4 +3,4 @@
 /**
  * Chat message structure
  */
-export type Message = { id: string, role: string, content: string, timestamp: bigint, model_id: string | null, attachments: Array<string>, images: Array<string>, };
+export type Message = { id: string, role: string, content: string, timestamp: number, model_id: string | null, attachments: Array<string>, images: Array<string>, };

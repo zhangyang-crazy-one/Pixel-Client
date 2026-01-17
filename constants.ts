@@ -1,21 +1,20 @@
 
+ 
 
-
-import { LLMProvider, LLMModel, Theme, AceConfig, Language } from './types';
+import { LLMProvider, LLMModel, Theme, Language } from './types';
 import React from 'react';
 
 // ApexBridge Configuration
 export const API_BASE_URL = 'http://localhost:3000';
-export const API_KEY = import.meta.env.VITE_LLM_API_KEY || 'sk-apex-bridge-key';
+
+const apiKey = import.meta.env.VITE_LLM_API_KEY;
+if (!apiKey) {
+  throw new Error('VITE_LLM_API_KEY is required');
+}
+export const API_KEY = apiKey;
 
 export const INITIAL_PROVIDERS: LLMProvider[] = []; 
-export const INITIAL_MODELS: LLMModel[] = []; 
-
-export const INITIAL_ACE_CONFIG: AceConfig = {
-  fastModelId: '',
-  reflectorModelId: '',
-  curatorModelId: ''
-};
+export const INITIAL_MODELS: LLMModel[] = [];
 
 // Use React.createElement to avoid JSX syntax in .ts file
 export const PROVIDER_LOGOS: Record<string, React.ReactNode> = {
@@ -337,7 +336,6 @@ export const TRANSLATIONS = {
     saved: 'Saved',
     providers: 'PROVIDERS',
     models: 'MODELS',
-    aceAgent: 'ACE AGENT',
     addProvider: 'ADD PROVIDER',
     editProvider: 'EDIT PROVIDER',
     saveProvider: 'SAVE PROVIDER',
@@ -365,20 +363,6 @@ export const TRANSLATIONS = {
     setAsDefault: 'SET AS DEFAULT',
     selectProvider: 'Select Provider',
     selectModel: 'Select Model',
-    aceConfigTitle: 'ACE AGENT CONFIG',
-    aceConfigDesc: 'Configure the Automated Cognitive Entity (ACE) agent workflow models.',
-    fastModel: 'FAST MODEL (Chat/Router)',
-    reflectorModel: 'REFLECTOR MODEL (Critique)',
-    curatorModel: 'CURATOR MODEL (Summary)',
-    fastModelDesc: 'High speed model for initial responses and routing (e.g., GPT-3.5, Haiku)',
-    reflectorModelDesc: 'High reasoning model for self-correction and critique (e.g., GPT-4, Opus)',
-    curatorModelDesc: 'Balanced model for summarization and final polish',
-    aceNote: 'ACE Agent workflow requires multiple specialized models for optimal performance.',
-    saveConfig: 'SAVE CONFIG',
-    configSaved: 'SAVED!',
-    warning: 'WARNING',
-    confirmModify: 'Modify ACE Config?',
-    confirmModifyDesc: 'Changing the core agent models may affect ongoing automated workflows.',
     llmConfig: 'LLM CONFIGURATION',
     themeDay: 'DAY MODE',
     themeNight: 'NIGHT MODE',
@@ -392,11 +376,6 @@ export const TRANSLATIONS = {
     noMessagesFound: 'No messages found.',
     selectModelStart: 'Select a model to start.',
     online: 'ONLINE',
-    deepThinking: 'Deep Thinking',
-    thinkingProcess: 'Thinking Process',
-    mascotConfig: 'MASCOT',
-    mascotSystemPrompt: 'MASCOT SYSTEM PROMPT',
-    mascotPromptPlaceholder: 'Define the personality of the pixel mascot...',
     interrupted: 'Interrupted by user.',
     default: 'DEFAULT',
     noModelsConfigured: 'No models configured. Please add a provider and model.',
@@ -472,20 +451,6 @@ export const TRANSLATIONS = {
     setAsDefault: '设为默认',
     selectProvider: '选择服务商',
     selectModel: '选择模型',
-    aceConfigTitle: 'ACE 代理配置',
-    aceConfigDesc: '配置自动认知实体 (ACE) 代理工作流模型。',
-    fastModel: '快速模型 (对话/路由)',
-    reflectorModel: '反思模型 (批评)',
-    curatorModel: '策展模型 (总结)',
-    fastModelDesc: '用于初始响应和路由的高速模型 (如 GPT-3.5, Haiku)',
-    reflectorModelDesc: '用于自我修正和批评的高推理模型 (如 GPT-4, Opus)',
-    curatorModelDesc: '用于总结和最终润色的平衡模型',
-    aceNote: 'ACE 代理工作流需要多个专用模型以获得最佳性能。',
-    saveConfig: '保存配置',
-    configSaved: '已保存!',
-    warning: '警告',
-    confirmModify: '修改 ACE 配置?',
-    confirmModifyDesc: '更改核心代理模型可能会影响正在进行的自动化工作流。',
     llmConfig: 'LLM 配置管理',
     themeDay: '日间模式',
     themeNight: '夜间模式',
@@ -499,11 +464,6 @@ export const TRANSLATIONS = {
     noMessagesFound: '未找到消息。',
     selectModelStart: '选择一个模型开始。',
     online: '在线',
-    deepThinking: '深度思考',
-    thinkingProcess: '思考过程',
-    mascotConfig: '吉祥物',
-    mascotSystemPrompt: '吉祥物系统提示词',
-    mascotPromptPlaceholder: '定义像素吉祥物的性格...',
     interrupted: '用户已中断。',
     default: '默认',
     noModelsConfigured: '未配置模型。请添加服务商和模型。',
@@ -551,7 +511,6 @@ export const TRANSLATIONS = {
     saved: '保存しました',
     providers: 'プロバイダー',
     models: 'モデル',
-    aceAgent: 'ACE エージェント',
     addProvider: 'プロバイダー追加',
     editProvider: 'プロバイダー編集',
     saveProvider: '保存',
@@ -579,20 +538,6 @@ export const TRANSLATIONS = {
     setAsDefault: 'デフォルトに設定',
     selectProvider: 'プロバイダー選択',
     selectModel: 'モデル選択',
-    aceConfigTitle: 'ACE エージェント設定',
-    aceConfigDesc: '自動認知エンティティ (ACE) ワークフローモデルの設定。',
-    fastModel: '高速モデル (チャット/ルーティング)',
-    reflectorModel: 'リフレクターモデル (批評)',
-    curatorModel: 'キュレーターモデル (要約)',
-    fastModelDesc: '初期応答とルーティング用の高速モデル (例: GPT-3.5, Haiku)',
-    reflectorModelDesc: '自己修正と批評用の高推論モデル (例: GPT-4, Opus)',
-    curatorModelDesc: '要約と最終仕上げ用のバランスモデル',
-    aceNote: 'ACE エージェントワークフローには、最適なパフォーマンスのために複数の特化モデルが必要です。',
-    saveConfig: '設定保存',
-    configSaved: '保存完了!',
-    warning: '警告',
-    confirmModify: 'ACE設定を変更?',
-    confirmModifyDesc: 'コアエージェントモデルの変更は、進行中の自動化ワークフローに影響を与える可能性があります。',
     llmConfig: 'LLM 設定',
     themeDay: 'デイモード',
     themeNight: 'ナイトモード',
@@ -606,11 +551,6 @@ export const TRANSLATIONS = {
     noMessagesFound: 'メッセージが見つかりません。',
     selectModelStart: 'モデルを選択して開始。',
     online: 'オンライン',
-    deepThinking: '深い思考',
-    thinkingProcess: '思考プロセス',
-    mascotConfig: 'マスコット',
-    mascotSystemPrompt: 'マスコットシステムプロンプト',
-    mascotPromptPlaceholder: 'ピクセルマスコットの性格を定義...',
     interrupted: 'ユーザーによって中断されました。',
     default: 'デフォルト',
     noModelsConfigured: 'モデルが設定されていません。プロバイダーとモデルを追加してください。',

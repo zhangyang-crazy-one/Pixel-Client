@@ -167,7 +167,8 @@ pub struct McpServerManager {
     pub servers: Arc<RwLock<HashMap<String, RunningMcpServer>>>,
 }
 
-/// Thinking depth levels for Deep Thinking mode
+/// Thinking depth levels for Deep Thinking mode (kept for compatibility, not used)
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS, Default)]
 #[ts(export)]
 pub enum ThinkingDepth {
@@ -177,26 +178,14 @@ pub enum ThinkingDepth {
     Deep,       // 深度思考 - 详细步骤分析
 }
 
-impl ThinkingDepth {
-    /// Convert to string representation
-    #[allow(dead_code)]
-    pub fn as_str(&self) -> &'static str {
-        match self {
-            ThinkingDepth::Surface => "surface",
-            ThinkingDepth::Moderate => "moderate",
-            ThinkingDepth::Deep => "deep",
-        }
-    }
-}
-
-/// Deep Thinking configuration per session
+/// Deep Thinking configuration per session (kept for compatibility, not used)
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct DeepThinkingConfig {
     pub enabled: bool,
     pub max_tokens: usize,
     pub temperature: f32,
-    pub 思考深度: ThinkingDepth,
     pub show_reasoning: bool,
     pub token_usage: usize,
     pub started_at: Option<u64>,
@@ -208,7 +197,6 @@ impl Default for DeepThinkingConfig {
             enabled: false,
             max_tokens: 8192,
             temperature: 0.7,
-            思考深度: ThinkingDepth::Moderate,
             show_reasoning: true,
             token_usage: 0,
             started_at: None,
@@ -216,7 +204,8 @@ impl Default for DeepThinkingConfig {
     }
 }
 
-/// Deep Thinking session status
+/// Deep Thinking session status (kept for compatibility, not used)
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct DeepThinkingStatus {
@@ -237,7 +226,8 @@ pub struct ReasoningBlock {
     pub timestamp: Option<u64>,
 }
 
-/// Parsed reasoning content
+/// Parsed reasoning content (kept for compatibility, not used)
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct ParsedReasoning {
@@ -259,7 +249,6 @@ pub struct ReasoningMessage {
     pub timestamp: u64,
     pub model_id: Option<String>,
     pub token_usage: Option<usize>,
-    pub is_deep_thinking: bool,
 }
 
 impl ReasoningMessage {
@@ -275,7 +264,6 @@ impl ReasoningMessage {
             timestamp: Utc::now().timestamp_millis() as u64,
             model_id: None,
             token_usage: None,
-            is_deep_thinking: false,
         }
     }
 
@@ -297,7 +285,6 @@ impl From<Message> for ReasoningMessage {
             timestamp: msg.timestamp,
             model_id: msg.model_id,
             token_usage: msg.token_usage,
-            is_deep_thinking: msg.is_deep_thinking,
         }
     }
 }
@@ -313,7 +300,6 @@ impl From<&Message> for ReasoningMessage {
             timestamp: msg.timestamp,
             model_id: msg.model_id.clone(),
             token_usage: msg.token_usage,
-            is_deep_thinking: msg.is_deep_thinking,
         }
     }
 }
@@ -325,7 +311,8 @@ pub struct McpTool {
     pub input_schema: Option<serde_json::Value>,
 }
 
-/// ACE Agent configuration
+/// ACE Agent configuration (kept for compatibility, not used)
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize, TS, Default)]
 #[ts(export)]
 pub struct AceConfig {

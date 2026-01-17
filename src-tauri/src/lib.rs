@@ -164,7 +164,7 @@ pub fn initialize_state<R: tauri::Runtime>(app: &tauri::AppHandle) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use state::{AppConfig, Message, ChatSession, LLMProvider, LLMModel, Skill, McpServer, DeepThinkingConfig, ThinkingDepth};
+    use state::{AppConfig, Message, ChatSession, LLMProvider, LLMModel, Skill, McpServer};
 
     // ============================================
     // Type Serialization Tests
@@ -282,35 +282,6 @@ mod tests {
         let deserialized: McpServer = serde_json::from_str(&serialized).unwrap();
         assert_eq!(server.command, deserialized.command);
         assert_eq!(server.args.len(), deserialized.args.len());
-    }
-
-    #[test]
-    fn test_deep_thinking_config_serialization() {
-        let config = DeepThinkingConfig {
-            enabled: true,
-            max_tokens: 16384,
-            temperature: 0.5,
-            思考深度: ThinkingDepth::Deep,
-            show_reasoning: true,
-            token_usage: 1000,
-            started_at: Some(1234567890),
-        };
-        
-        let serialized = serde_json::to_string(&config).unwrap();
-        let deserialized: DeepThinkingConfig = serde_json::from_str(&serialized).unwrap();
-        assert_eq!(config.enabled, deserialized.enabled);
-        assert_eq!(config.max_tokens, deserialized.max_tokens);
-    }
-
-    #[test]
-    fn test_thinking_depth_serialization() {
-        let depths = vec![ThinkingDepth::Surface, ThinkingDepth::Moderate, ThinkingDepth::Deep];
-        
-        for depth in depths {
-            let serialized = serde_json::to_string(&depth).unwrap();
-            let deserialized: ThinkingDepth = serde_json::from_str(&serialized).unwrap();
-            assert_eq!(depth, deserialized);
-        }
     }
 
     #[test]
