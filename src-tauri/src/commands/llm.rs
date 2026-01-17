@@ -92,16 +92,18 @@ pub fn parse_reasoning_content_cmd(
     // Format 1: <reasoning>...</reasoning>
     let reasoning_tag_pattern = Regex::new(r"(?i)<reasoning>(.*?)</reasoning>")
         .map_err(|e| format!("Regex error: {}", e))?;
-    
+
     // Format 2: [Reasoning: ...] or [Thinking: ...]
-    let bracket_pattern = Regex::new(r"(?i)\[Reasoning\]:?([^\[\]]*?)(?=\[|$)")
+    // Note: Using [^[\n]* to avoid lookahead - matches until [ or newline
+    let bracket_pattern = Regex::new(r"(?i)\[Reasoning\]:?\s*([^\[\n]*)")
         .map_err(|e| format!("Regex error: {}", e))?;
-    
-    let thinking_bracket_pattern = Regex::new(r"(?i)\[Thinking\]:?([^\[\]]*?)(?=\[|$)")
+
+    let thinking_bracket_pattern = Regex::new(r"(?i)\[Thinking\]:?\s*([^\[\n]*)")
         .map_err(|e| format!("Regex error: {}", e))?;
-    
+
     // Format 3: Step 1:, Step 2:, etc.
-    let step_pattern = Regex::new(r"(?i)(?:^|\n)\s*(?:Step|步骤|阶段)\s*(\d+)[:：]?\s*(.+?)(?=(?:Step|步骤|阶段)\s*\d+|\Z)")
+    // Simplified pattern without lookahead - will capture more and trim later
+    let step_pattern = Regex::new(r"(?i)(?:^|\n)\s*(?:Step|步骤|阶段)\s*(\d+)[:：]?\s*([^\n]*)")
         .map_err(|e| format!("Regex error: {}", e))?;
 
     let mut reasoning_blocks: Vec<ReasoningBlock> = Vec::new();
