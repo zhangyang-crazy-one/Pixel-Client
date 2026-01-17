@@ -130,7 +130,7 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
             onUpdateProviders(providers.map(p => p.id === editingProviderId ? updated : p));
             setEditingProviderId(null);
         } else {
-            const created = await apiClient.createProvider(newProvider);
+            const created = await apiClient.createProvider(newProvider.name, newProvider.type, newProvider.baseUrl, newProvider.apiKey);
             onUpdateProviders([...providers, created]);
         }
         setNewProvider({ type: 'custom', name: '', baseUrl: '', apiKey: '' });
@@ -212,11 +212,11 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
 
     try {
         if (editingModelId) {
-            const updated = await apiClient.updateModel({ ...modelPayload, id: editingModelId });
+            const updated = await apiClient.updateModel(editingModelId, modelPayload);
             onUpdateModels(models.map(m => m.id === editingModelId ? updated : m));
             setEditingModelId(null);
         } else {
-            const created = await apiClient.createModel(modelPayload);
+            const created = await apiClient.createModel(modelPayload.providerId, modelPayload.name, modelPayload.modelId, modelPayload.type);
             onUpdateModels([...models, created]);
         }
         
@@ -247,7 +247,7 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
   const handleDeleteModel = async (model: LLMModel) => {
       if (!confirm(t.deleteModelConfirm)) return;
       try {
-          await apiClient.deleteModel(model.providerId, model.id);
+          await apiClient.deleteModel(model.id);
           onUpdateModels(models.filter(x => x.id !== model.id));
           if (editingModelId === model.id) handleCancelModel();
       } catch (e) {

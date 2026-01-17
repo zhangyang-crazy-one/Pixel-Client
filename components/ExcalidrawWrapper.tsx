@@ -273,7 +273,7 @@ const blobToUint8Array = async (blob: Blob): Promise<Uint8Array> => {
           }}
         >
           <button
-            onClick={saveScene}
+            onClick={() => saveScene()}
             disabled={isSaving}
             style={{
               padding: '6px 12px',

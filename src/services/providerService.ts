@@ -3,7 +3,7 @@
  * Handles LLM Provider management with the Tauri backend
  */
 
-import { apiClient } from '../services/apiClient';
+import { apiClient } from '../../services/apiClient';
 import type { LLMProvider, LLMModel } from '../../types';
 
 // ============================================================================

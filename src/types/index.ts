@@ -2,7 +2,7 @@
 // Generated automatically from Rust state types
 
 export type { AppConfig } from './app_config';
-export type { Message } from './Message';
+export type { message } from './message';
 export type { ChatSession } from './ChatSession';
 export type { LLMProvider } from './LLMProvider';
 export type { LLMModel } from './LLMModel';

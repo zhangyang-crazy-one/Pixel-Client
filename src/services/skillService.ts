@@ -3,7 +3,7 @@
  * Handles Skill management and execution
  */
 
-import { apiClient } from '../services/apiClient';
+import { apiClient } from '../../services/apiClient';
 
 // ============================================================================
 // Types
@@ -265,13 +265,15 @@ export function createParameterSchema(
   };
   
   for (const param of parameters) {
-    (schema.properties as Record<string, unknown>)[param.name] = {
+    const prop: { type: string; description: string; default?: unknown } = {
       type: param.type,
       description: param.description,
     };
-    
+
+    (schema.properties as Record<string, typeof prop>)[param.name] = prop;
+
     if (param.default !== undefined) {
-      (schema.properties as Record<string, unknown>)[param.name].default = param.default;
+      (schema.properties as Record<string, typeof prop>)[param.name].default = param.default;
     }
     
     if (param.required) {

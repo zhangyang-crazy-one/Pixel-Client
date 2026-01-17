@@ -473,20 +473,20 @@ mod tests {
 
     #[test]
     fn test_skill_parameter_validation() {
-        use state::SkillParameter;
+        use state::{SkillParameter, SkillParameterType};
 
         // Test parameter schema validation
         let params = vec![
             SkillParameter {
                 name: "name".to_string(),
-                r#type: "string".to_string(),
+                param_type: SkillParameterType::String,
                 description: "Name parameter".to_string(),
                 required: true,
                 default: None,
             },
             SkillParameter {
                 name: "count".to_string(),
-                r#type: "number".to_string(),
+                param_type: SkillParameterType::Number,
                 description: "Count parameter".to_string(),
                 required: false,
                 default: Some("0".to_string()),

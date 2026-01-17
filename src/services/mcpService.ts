@@ -3,7 +3,7 @@
  * Handles MCP (Model Context Protocol) Server management
  */
 
-import { apiClient } from '../services/apiClient';
+import { apiClient } from '../../services/apiClient';
 import type { McpTool, McpServer, McpStats } from '../../types';
 
 // ============================================================================
