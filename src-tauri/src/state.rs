@@ -325,22 +325,12 @@ pub struct McpTool {
 }
 
 /// ACE Agent configuration
-#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS, Default)]
 #[ts(export)]
 pub struct AceConfig {
     pub fast_model_id: String,
     pub reflector_model_id: String,
     pub curator_model_id: String,
-}
-
-impl Default for AceConfig {
-    fn default() -> Self {
-        Self {
-            fast_model_id: String::new(),
-            reflector_model_id: String::new(),
-            curator_model_id: String::new(),
-        }
-    }
 }
 
 /// Skill parameter definition (default as string to avoid TS constraint)

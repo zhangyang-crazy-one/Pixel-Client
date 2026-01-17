@@ -510,9 +510,6 @@ mod tests {
 
     #[test]
     fn test_state_operations() {
-        // Test state operations
-        assert!(true);
-
         // Test initial state
         let initial_state = SharedState::new();
         
