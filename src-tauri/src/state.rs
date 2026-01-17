@@ -178,24 +178,13 @@ pub enum ThinkingDepth {
 }
 
 impl ThinkingDepth {
-    /// Create a new ReasoningMessage from scratch
-    pub fn new(id: String, role: String, content: String) -> Self {
-        Self {
-            id,
-            role,
-            content,
-            reasoning_content: None,
-            reasoning_blocks: Vec::new(),
-            timestamp: Utc::now().timestamp_millis() as u64,
-            model_id: None,
-            token_usage: None,
-            is_deep_thinking: false,
+    /// Convert to string representation
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            ThinkingDepth::Surface => "surface",
+            ThinkingDepth::Moderate => "moderate",
+            ThinkingDepth::Deep => "deep",
         }
-    }
-
-    /// Check if this message has reasoning content
-    pub fn has_reasoning(&self) -> bool {
-        self.reasoning_content.is_some() || !self.reasoning_blocks.is_empty()
     }
 }
 
@@ -336,7 +325,7 @@ pub struct McpTool {
 }
 
 /// ACE Agent configuration
-#[derive(Debug, Clone, Serialize, Deserialize, TS, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct AceConfig {
     pub fast_model_id: String,
