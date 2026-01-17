@@ -198,18 +198,118 @@ export const THEME_STYLES = {
       secondaryText: 'text-[#90e0ef]',
       accent: 'text-[#00b4d8]',
       border: 'border border-[#0077b6]',
-      
+
       font: 'font-sans',
       radius: 'rounded-xl',
       borderWidth: 'border',
       borderColor: 'border-[#003566]',
       shadow: 'shadow-[0_0_10px_rgba(0,119,182,0.3)]',
       inputBg: 'bg-[#001d3d]',
-      
+
       sidebarBorder: 'border-r border-[#003566]',
       headerBorder: 'border-b border-[#003566]',
       card: 'bg-[#001d3d] border border-[#00b4d8]/30 shadow-[0_0_20px_rgba(0,180,216,0.1)]',
       button: 'rounded-lg shadow-[0_0_10px_rgba(0,180,216,0.4)] font-bold transition-all hover:shadow-[0_0_20px_rgba(0,180,216,0.8)]'
+  },
+  // SHADCN DARK: Clean shadcn/ui inspired dark theme
+  [Theme.SHADCN_DARK]: {
+      type: 'modern',
+      bg: 'bg-zinc-950',
+      text: 'text-zinc-50',
+      textMuted: 'text-zinc-400',
+      primary: 'bg-zinc-50 hover:bg-zinc-200 text-zinc-900',
+      primaryText: 'text-zinc-900',
+      secondary: 'bg-zinc-900',
+      secondaryText: 'text-zinc-50',
+      accent: 'text-zinc-300',
+      border: 'border border-zinc-800',
+
+      font: 'font-sans',
+      radius: 'rounded-md',
+      borderWidth: 'border',
+      borderColor: 'border-zinc-800',
+      shadow: 'shadow-sm',
+      inputBg: 'bg-zinc-900',
+
+      sidebarBorder: 'border-r border-zinc-800',
+      headerBorder: 'border-b border-zinc-800',
+      card: 'bg-zinc-900 border border-zinc-800 shadow-sm',
+      button: 'rounded-md font-medium transition-colors'
+  },
+  // SHADCN LIGHT: Clean shadcn/ui inspired light theme
+  [Theme.SHADCN_LIGHT]: {
+      type: 'modern',
+      bg: 'bg-white',
+      text: 'text-zinc-950',
+      textMuted: 'text-zinc-500',
+      primary: 'bg-zinc-900 hover:bg-zinc-800 text-zinc-50',
+      primaryText: 'text-zinc-50',
+      secondary: 'bg-zinc-100',
+      secondaryText: 'text-zinc-950',
+      accent: 'text-zinc-600',
+      border: 'border border-zinc-200',
+
+      font: 'font-sans',
+      radius: 'rounded-md',
+      borderWidth: 'border',
+      borderColor: 'border-zinc-200',
+      shadow: 'shadow-sm',
+      inputBg: 'bg-white',
+
+      sidebarBorder: 'border-r border-zinc-200',
+      headerBorder: 'border-b border-zinc-200',
+      card: 'bg-white border border-zinc-200 shadow-sm',
+      button: 'rounded-md font-medium transition-colors'
+  },
+  // CYBER: Neon cyberpunk aesthetic
+  [Theme.CYBER]: {
+      type: 'modern',
+      bg: 'bg-[#0a0a0f]',
+      text: 'text-cyan-400',
+      textMuted: 'text-cyan-600',
+      primary: 'bg-cyan-500 hover:bg-cyan-400 shadow-[0_0_20px_rgba(6,182,212,0.5)]',
+      primaryText: 'text-black',
+      secondary: 'bg-[#12121a]',
+      secondaryText: 'text-cyan-400',
+      accent: 'text-pink-500',
+      border: 'border border-cyan-500/30',
+
+      font: 'font-sans',
+      radius: 'rounded-lg',
+      borderWidth: 'border',
+      borderColor: 'border-cyan-500/30',
+      shadow: 'shadow-[0_0_15px_rgba(6,182,212,0.2)]',
+      inputBg: 'bg-[#12121a]',
+
+      sidebarBorder: 'border-r border-cyan-500/20',
+      headerBorder: 'border-b border-cyan-500/20',
+      card: 'bg-[#12121a] border border-cyan-500/30 shadow-[0_0_20px_rgba(6,182,212,0.1)]',
+      button: 'rounded-lg font-bold shadow-[0_0_10px_rgba(6,182,212,0.3)] hover:shadow-[0_0_20px_rgba(6,182,212,0.5)] transition-all'
+  },
+  // SUNSET: Warm orange/red gradient theme
+  [Theme.SUNSET]: {
+      type: 'modern',
+      bg: 'bg-[#1a1a2e]',
+      text: 'text-orange-100',
+      textMuted: 'text-orange-300/60',
+      primary: 'bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-400 hover:to-red-400',
+      primaryText: 'text-white',
+      secondary: 'bg-[#16213e]',
+      secondaryText: 'text-orange-100',
+      accent: 'text-orange-400',
+      border: 'border border-orange-500/30',
+
+      font: 'font-sans',
+      radius: 'rounded-lg',
+      borderWidth: 'border',
+      borderColor: 'border-orange-500/30',
+      shadow: 'shadow-lg',
+      inputBg: 'bg-[#16213e]',
+
+      sidebarBorder: 'border-r border-orange-500/20',
+      headerBorder: 'border-b border-orange-500/20',
+      card: 'bg-[#16213e] border border-orange-500/20 shadow-lg',
+      button: 'rounded-lg font-medium transition-all'
   }
 };
 

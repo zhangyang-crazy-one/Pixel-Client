@@ -1,28 +1,82 @@
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
 import { Theme, LLMProvider, LLMModel, Message, AceConfig, Language, ChatSession } from './types';
 import { INITIAL_ACE_CONFIG, THEME_STYLES, TRANSLATIONS, getProviderIcon } from './constants';
 import { PixelButton, PixelSelect, PixelCard } from './components/PixelUI';
 import { ModelManager } from './components/ModelManager';
 import { Chat } from './components/Chat';
 import { Mascot } from './components/Mascot';
-import { Settings, Search, ChevronLeft, ChevronRight, Trash2, RefreshCcw, AlertCircle, MessageSquare, MessageSquareOff } from 'lucide-react';
+import { CustomTitlebar } from './components/CustomTitlebar';
+import { SettingsDropdown } from './components/SettingsDropdown';
+import { ToastProvider, useToast } from './components/Toast';
+import { Settings, Search, ChevronLeft, ChevronRight, Trash2, RefreshCcw, AlertCircle, MessageSquare, MessageSquareOff, Pencil, MessageCircle, Paintbrush } from 'lucide-react';
 import { apiClient } from './services/apiClient';
 import { streamChatResponse, fetchMascotComment } from './services/llmService';
 
-const App: React.FC = () => {
+// Lazy load ExcalidrawWrapper
+const ExcalidrawWrapper = lazy(() => import('./components/ExcalidrawWrapper'));
+
+// View mode type
+type ViewMode = 'chat' | 'canvas';
+
+// Group sessions by date
+const groupSessionsByDate = (sessions: ChatSession[]) => {
+  const groups: Record<string, ChatSession[]> = {
+    'Today': [],
+    'Yesterday': [],
+    'Previous 7 Days': [],
+    'Older': []
+  };
+
+  const now = Date.now();
+  const oneDay = 24 * 60 * 60 * 1000;
+
+  sessions.forEach(session => {
+    const diff = now - session.lastUpdated;
+    if (diff < oneDay) groups['Today'].push(session);
+    else if (diff < 2 * oneDay) groups['Yesterday'].push(session);
+    else if (diff < 7 * oneDay) groups['Previous 7 Days'].push(session);
+    else groups['Older'].push(session);
+  });
+
+  return groups;
+};
+
+interface AppProps {
+  onThemeChange?: (theme: Theme) => void;
+}
+
+const App: React.FC<AppProps> = ({ onThemeChange }) => {
   // --- State ---
   const [isLoading, setIsLoading] = useState(true);
   const [isBackendOffline, setIsBackendOffline] = useState(false);
-  
-  const [theme, setTheme] = useState<Theme>(Theme.LIGHT);
+
+  const { showToast } = useToast();
+
+  // Theme state with localStorage persistence
+  const [theme, setTheme] = useState<Theme>(() => {
+    const savedTheme = localStorage.getItem('pixel-theme');
+    if (savedTheme && Object.values(Theme).includes(savedTheme as Theme)) {
+      return savedTheme as Theme;
+    }
+    return Theme.LIGHT;
+  });
+  // Save theme to localStorage when it changes and notify parent
+  useEffect(() => {
+    localStorage.setItem('pixel-theme', theme);
+    onThemeChange?.(theme);
+  }, [theme, onThemeChange]);
+
   const [language, setLanguage] = useState<Language>('zh');
   const [providers, setProviders] = useState<LLMProvider[]>([]);
   const [models, setModels] = useState<LLMModel[]>([]);
   const [aceConfig, setAceConfig] = useState<AceConfig>(INITIAL_ACE_CONFIG);
   const [activeModelId, setActiveModelId] = useState<string>('');
   const [isModelManagerOpen, setIsModelManagerOpen] = useState(false);
-  
+
+  // View mode state for chat/canvas toggle
+  const [viewMode, setViewMode] = useState<ViewMode>('chat');
+
   const [activeSessionId, setActiveSessionId] = useState<string>('');
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   
@@ -173,6 +227,29 @@ const App: React.FC = () => {
     return () => window.removeEventListener('keydown', handler);
   }, []);
 
+  // Keyboard shortcuts (Ctrl+K for search, Ctrl+M to cycle theme)
+  useEffect(() => {
+    const handleKeyboard = (e: KeyboardEvent) => {
+      // Ctrl+K to focus search
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        const searchInput = document.querySelector('input[placeholder]') as HTMLInputElement;
+        if (searchInput) searchInput.focus();
+      }
+      // Ctrl+M to cycle theme
+      if ((e.ctrlKey || e.metaKey) && e.key === 'm') {
+        e.preventDefault();
+        const themes = Object.values(Theme);
+        const currentIndex = themes.indexOf(theme);
+        const nextIndex = (currentIndex + 1) % themes.length;
+        setTheme(themes[nextIndex]);
+        showToast(`Theme: ${themes[nextIndex]}`, 'info');
+      }
+    };
+    window.addEventListener('keydown', handleKeyboard);
+    return () => window.removeEventListener('keydown', handleKeyboard);
+  }, [theme, showToast]);
+
   const handleUpdateMessage = (id: string, content: string) => {
     setMessages(prev => prev.map(msg => msg.id === id ? { ...msg, content } : msg));
   };
@@ -280,12 +357,15 @@ const App: React.FC = () => {
 
   return (
     <div className={`
-      flex h-screen w-screen overflow-hidden ${styles.bg} ${styles.text} transition-colors duration-500 
-      ${!isModern ? 'scanline-effect' : ''} 
+      flex flex-col h-screen w-screen overflow-hidden ${styles.bg} ${styles.text} transition-colors duration-500
+      ${!isModern ? 'scanline-effect' : ''}
       ${rainbowMode ? 'rainbow-mode' : ''}
       ${styles.font} ${rootThemeClass}
     `}>
-      
+      {/* Custom Titlebar for Tauri window controls */}
+      <CustomTitlebar />
+
+      <div className="flex flex-1 overflow-hidden">
       {showDeleteDialog && (
         <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 backdrop-blur-sm">
             <PixelCard theme={theme} className={`w-[90%] max-w-[350px] flex flex-col gap-4 ${styles.borderColor} animate-float`}>
@@ -412,41 +492,71 @@ const App: React.FC = () => {
                     </div>
                  )}
                  <div className="relative hidden md:block">
-                     <input 
-                        type="text" 
+                     <input
+                        type="text"
                         placeholder={t.searchPlaceholder}
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className={`
-                            pl-8 pr-2 py-1 ${styles.borderWidth} ${styles.borderColor} text-sm w-48 
+                            pl-8 pr-2 py-1 ${styles.borderWidth} ${styles.borderColor} text-sm w-48
                             ${styles.inputBg} ${styles.text} ${styles.radius} placeholder-opacity-50 outline-none
                             focus:shadow-md transition-shadow
-                        `} 
+                        `}
                      />
                      <Search className={`absolute left-2 top-1.5 w-4 h-4 opacity-50 ${styles.text}`} />
                  </div>
+
+                 {/* ViewMode Toggle Button */}
+                 <PixelButton
+                    theme={theme}
+                    variant="secondary"
+                    onClick={() => setViewMode(viewMode === 'chat' ? 'canvas' : 'chat')}
+                    className="!p-2"
+                    title={viewMode === 'chat' ? 'Switch to Canvas' : 'Switch to Chat'}
+                 >
+                    {viewMode === 'chat' ? <Paintbrush size={18} /> : <MessageCircle size={18} />}
+                 </PixelButton>
+
+                 {/* Settings Dropdown */}
+                 <SettingsDropdown
+                    theme={theme}
+                    language={language}
+                    onThemeChange={setTheme}
+                    onLanguageChange={setLanguage}
+                 />
              </div>
          </div>
 
          <div className="flex-1 overflow-hidden bg-white/5 relative">
-             <Chat 
-                theme={theme}
-                language={language}
-                messages={messages}
-                activeModel={activeModel}
-                provider={activeProvider}
-                onSendMessage={handleSendMessage}
-                onUpdateMessage={handleUpdateMessage}
-                setMascotState={setMascotState}
-                onTriggerRainbow={handleRainbowTrigger}
-                setTheme={setTheme}
-                setLanguage={setLanguage}
-                isMoonlightUnlocked={false}
-                searchQuery={searchQuery}
-                onStop={handleStopGeneration}
-                isStreaming={isStreaming}
-             />
+             {viewMode === 'chat' ? (
+               <Chat
+                  theme={theme}
+                  language={language}
+                  messages={messages}
+                  activeModel={activeModel}
+                  provider={activeProvider}
+                  onSendMessage={handleSendMessage}
+                  onUpdateMessage={handleUpdateMessage}
+                  setMascotState={setMascotState}
+                  onTriggerRainbow={handleRainbowTrigger}
+                  setTheme={setTheme}
+                  setLanguage={setLanguage}
+                  isMoonlightUnlocked={false}
+                  searchQuery={searchQuery}
+                  onStop={handleStopGeneration}
+                  isStreaming={isStreaming}
+               />
+             ) : (
+               <Suspense fallback={
+                 <div className={`flex items-center justify-center h-full ${styles.text}`}>
+                   <div className="animate-pulse">Loading Canvas...</div>
+                 </div>
+               }>
+                 <ExcalidrawWrapper theme={theme} onToast={showToast} />
+               </Suspense>
+             )}
          </div>
+      </div>
       </div>
 
       {isModelManagerOpen && (

@@ -29,6 +29,8 @@ interface ChatProps {
   searchQuery?: string;
   onStop?: () => void;
   isStreaming?: boolean;
+  activeSessionId?: string;
+  isLoading?: boolean;
 }
 
 const CopyButton: React.FC<{ content: string }> = ({ content }) => {

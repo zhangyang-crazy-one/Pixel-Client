@@ -1,6 +1,165 @@
 @import "tailwindcss";
 
-/* Pixel UI Theme Customizations */
+/* ========================================
+   Custom Titlebar Styles (Tauri)
+   ======================================== */
+
+/* Enable dragging for elements with data-tauri-drag-region */
+*[data-tauri-drag-region] {
+  -webkit-app-region: drag;
+  app-region: drag;
+}
+
+/* Disable dragging for interactive elements inside drag region */
+*[data-tauri-drag-region] button,
+*[data-tauri-drag-region] input,
+*[data-tauri-drag-region] select,
+*[data-tauri-drag-region] a {
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+}
+
+/* Custom Titlebar Container */
+.custom-titlebar {
+  display: flex;
+  align-items: center;
+  height: 40px;
+  min-height: 40px;
+  background: linear-gradient(180deg, #1a1a2e 0%, #16162a 100%);
+  border-bottom: 2px solid #2d2b40;
+  padding: 0 8px;
+  user-select: none;
+  position: relative;
+  z-index: 9999;
+}
+
+/* Titlebar Title Section */
+.titlebar-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-left: 4px;
+}
+
+.titlebar-icon {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.titlebar-text {
+  font-family: 'VT323', 'Inter', monospace;
+  font-size: 16px;
+  color: #ff00ff;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+/* Titlebar Spacer (fills remaining space) */
+.titlebar-spacer {
+  flex: 1;
+}
+
+/* Window Control Buttons */
+.titlebar-controls {
+  display: flex;
+  gap: 0;
+}
+
+.titlebar-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 40px;
+  background: transparent;
+  border: none;
+  color: #a0a0a0;
+  cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+.titlebar-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+.titlebar-button:active {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* Minimize Button */
+.titlebar-minimize:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Maximize Button */
+.titlebar-maximize:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Close Button (Special styling - red on hover) */
+.titlebar-close:hover {
+  background: #e81123;
+  color: #ffffff;
+}
+
+.titlebar-close:active {
+  background: #c50f1f;
+}
+
+/* Pixel theme adjustments */
+.theme-pixel .custom-titlebar {
+  border-bottom: 4px solid #ff00ff;
+  box-shadow: inset 0 -2px 0 0 #00ffff;
+}
+
+.theme-pixel .titlebar-button {
+  border: none;
+}
+
+.theme-pixel .titlebar-button:hover {
+  background: #ff00ff;
+  color: #000000;
+}
+
+.theme-pixel .titlebar-close:hover {
+  background: #ff0000;
+  color: #ffffff;
+}
+
+/* Modern theme adjustments */
+.theme-modern .custom-titlebar {
+  background: linear-gradient(180deg, #f5f5f5 0%, #e8e8e8 100%);
+  border-bottom: 1px solid #d0d0d0;
+}
+
+.theme-modern .titlebar-text {
+  font-family: 'Inter', sans-serif;
+  color: #333333;
+  text-transform: none;
+  font-weight: 600;
+}
+
+.theme-modern .titlebar-button {
+  color: #666666;
+}
+
+.theme-modern .titlebar-button:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: #333333;
+}
+
+.theme-modern .titlebar-close:hover {
+  background: #e81123;
+  color: #ffffff;
+}
+
+/* ========================================
+   Pixel UI Theme Customizations
+   ======================================== */
 .theme-pixel {
   --font-pixel-verse: 'VT323', 'Noto Sans SC', monospace;
 }
@@ -147,4 +306,42 @@ body {
 .theme-pixel {
   font-family: 'VT323', 'Noto Sans SC', monospace;
   image-rendering: pixelated;
+}
+
+/* ========================================
+   Excalidraw Wrapper Styles
+   ======================================== */
+.excalidraw-wrapper {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.excalidraw-wrapper .excalidraw {
+  width: 100%;
+  height: 100%;
+}
+
+/* Ensure Excalidraw fills its container */
+.excalidraw-wrapper .excalidraw .excalidraw-container {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Fix for Excalidraw canvas sizing */
+.excalidraw .App-menu_top {
+  z-index: 10;
+}
+
+/* Custom toolbar styles */
+.excalidraw-toolbar {
+  flex-shrink: 0;
+}
+
+.excalidraw-toolbar button:hover {
+  opacity: 0.8;
+}
+
+.excalidraw-toolbar button:active {
+  transform: scale(0.98);
 }

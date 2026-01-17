@@ -6,8 +6,9 @@ export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
     return {
       server: {
-        port: 3000,
+        port: 5173,
         host: '0.0.0.0',
+        strictPort: true,
       },
       plugins: [react()],
       define: {
@@ -18,6 +19,18 @@ export default defineConfig(({ mode }) => {
         alias: {
           '@': path.resolve(__dirname, '.'),
         }
-      }
+      },
+      // Optimize Excalidraw for better loading
+      optimizeDeps: {
+        include: ['@excalidraw/excalidraw'],
+        esbuildOptions: {
+          // Required for @excalidraw/excalidraw
+          target: 'esnext',
+        },
+      },
+      build: {
+        // Ensure compatibility with Excalidraw
+        target: 'esnext',
+      },
     };
 });

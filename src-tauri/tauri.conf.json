@@ -4,26 +4,26 @@
   "version": "1.0.0",
   "identifier": "com.pixel.client",
   "build": {
-    "beforeDevCommand": "bun run dev",
     "devUrl": "http://localhost:5173",
+    "beforeDevCommand": "bun run dev:vite",
     "beforeBuildCommand": "bun run build",
     "frontendDist": "../dist"
   },
   "app": {
     "withGlobalTauri": true,
     "windows": [
-      {
-        "title": "Pixel-Client",
-        "width": 1200,
-        "height": 800,
-        "minWidth": 800,
-        "minHeight": 600,
-        "resizable": true,
-        "fullscreen": false,
-        "decorations": true,
-        "transparent": false,
-        "alwaysOnTop": false
-      }
+{
+      "title": "Pixel-Client",
+      "width": 1200,
+      "height": 800,
+      "minWidth": 800,
+      "minHeight": 600,
+      "resizable": true,
+      "fullscreen": false,
+      "decorations": false,
+      "transparent": false,
+      "alwaysOnTop": false
+    }
     ],
     "security": {
       "csp": null
