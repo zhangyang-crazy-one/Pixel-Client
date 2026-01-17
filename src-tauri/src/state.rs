@@ -179,6 +179,7 @@ pub enum ThinkingDepth {
 
 impl ThinkingDepth {
     /// Convert to string representation
+    #[allow(dead_code)]
     pub fn as_str(&self) -> &'static str {
         match self {
             ThinkingDepth::Surface => "surface",
@@ -347,6 +348,7 @@ pub enum SkillParameterType {
 
 impl SkillParameterType {
     /// Parse from string for backward compatibility
+    #[allow(dead_code)]
     pub fn from_str(s: &str) -> Self {
         match s.to_lowercase().as_str() {
             "string" => Self::String,
@@ -359,6 +361,7 @@ impl SkillParameterType {
     }
 
     /// Convert to string for serialization
+    #[allow(dead_code)]
     pub fn as_str(&self) -> &'static str {
         match self {
             Self::String => "string",
