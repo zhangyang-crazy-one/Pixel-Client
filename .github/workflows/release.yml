@@ -1,0 +1,258 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+# Cancel in-progress runs for the same workflow/tag
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Explicit permissions for security
+permissions:
+  contents: write
+  actions: read
+  attestations: write
+  id-token: write
+
+env:
+  BUN_VERSION: '1.2.23'
+
+jobs:
+  # ============================================
+  # Create GitHub Release
+  # ============================================
+  create-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-22.04
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+      release_id: ${{ steps.create_release.outputs.id }}
+    steps:
+      - name: Create Release
+        id: create_release
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: release } = await github.rest.repos.createRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: process.env.GITHUB_TAG,
+              name: `Pixel-Client ${process.env.GITHUB_TAG}`,
+              draft: false,
+              prerelease: false,
+              generate_release_notes: true
+            });
+            console.log('Created release:', release.html_url);
+            return release;
+          env:
+            GITHUB_TAG: ${{ github.ref_name }}
+        id: create_release
+
+  # ============================================
+  # Build - Linux
+  # ============================================
+  build-linux:
+    name: Build Linux
+    runs-on: ubuntu-22.04
+    needs: create-release
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - artifact_suffix: 'x64'
+            target: x86_64-unknown-linux-gnu
+          - artifact_suffix: 'arm64'
+            target: aarch64-unknown-linux-gnu
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+          registry: 'https://registry.npmjs.org'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build frontend
+        run: bun run build
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libsoup-3.0-dev \
+            libjavascriptcoregtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            libasound2-dev \
+            libudev-dev \
+            libssl-dev \
+            build-essential \
+            pkg-config
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Build Tauri app (Linux)
+        run: bun run tauri build --target ${{ matrix.target }}
+        env:
+          CI: true
+
+      - name: Upload Linux artifacts
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: src-tauri/target/release/bundle/**
+          asset_name: pixel-client-${{ github.ref_name }}-linux-${{ matrix.artifact_suffix }}
+          asset_content_type: application/octet-stream
+
+  # ============================================
+  # Build - Windows
+  # ============================================
+  build-windows:
+    name: Build Windows
+    runs-on: windows-latest
+    needs: create-release
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - artifact_suffix: 'x64'
+            target: x86_64-pc-windows-msvc
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+          registry: 'https://registry.npmjs.org'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build frontend
+        run: bun run build
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Build Tauri app (Windows)
+        run: bun run tauri build --target ${{ matrix.target }}
+        env:
+          CI: true
+
+      - name: Upload Windows artifacts
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: src-tauri/target/release/bundle/**
+          asset_name: pixel-client-${{ github.ref_name }}-windows-${{ matrix.artifact_suffix }}
+          asset_content_type: application/octet-stream
+
+  # ============================================
+  # Build - macOS
+  # ============================================
+  build-macos:
+    name: Build macOS
+    runs-on: macos-14
+    needs: create-release
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - artifact_suffix: 'arm64'
+            target: aarch64-apple-darwin
+          - artifact_suffix: 'x64'
+            target: x86_64-apple-darwin
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+          registry: 'https://registry.npmjs.org'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build frontend
+        run: bun run build
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Build Tauri app (macOS)
+        run: bun run tauri build --target ${{ matrix.target }}
+        env:
+          CI: true
+
+      - name: Upload macOS artifacts
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: src-tauri/target/release/bundle/**
+          asset_name: pixel-client-${{ github.ref_name }}-macos-${{ matrix.artifact_suffix }}
+          asset_content_type: application/octet-stream
+
+  # ============================================
+  # Verification
+  # ============================================
+  verify-release:
+    name: Verify Release
+    runs-on: ubuntu-22.04
+    needs: [build-linux, build-windows, build-macos]
+    steps:
+      - name: Verify all platforms built successfully
+        run: |
+          echo "==========================================="
+          echo "Release ${{ github.ref_name }} completed successfully!"
+          echo "==========================================="
+          echo "Built for:"
+          echo "  - Linux x64 (x86_64)"
+          echo "  - Linux arm64 (aarch64)"
+          echo "  - Windows x64"
+          echo "  - macOS x64"
+          echo "  - macOS arm64 (Apple Silicon)"
+          echo ""
+          echo "Artifacts uploaded to GitHub Release"
