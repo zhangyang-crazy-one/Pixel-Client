@@ -32,5 +32,11 @@ export default defineConfig(({ mode }) => {
         // Ensure compatibility with Excalidraw
         target: 'esnext',
       },
+      // Vitest configuration
+      test: {
+        environment: 'jsdom',
+        globals: true,
+        setupFiles: [],
+      },
     };
 });

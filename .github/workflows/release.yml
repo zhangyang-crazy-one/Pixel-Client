@@ -140,6 +140,7 @@ jobs:
             apt-get autoremove -y
             apt-get install -y --no-install-recommends --no-install-suggests \
               curl \
+              unzip \
               libwebkit2gtk-4.1-dev \
               build-essential \
               libssl-dev \
@@ -157,7 +158,12 @@ jobs:
             curl -fsSL https://deb.nodesource.com/setup_lts.x | bash
             apt-get install -y nodejs
 
-            cd /github/workspace
+            # Install Bun
+            curl -fsSL https://bun.sh/install | bash
+            export BUN_INSTALL="$HOME/.bun"
+            export PATH="$BUN_INSTALL/bin:$PATH"
+
+            cd "${GITHUB_WORKSPACE}"
             bun install
             bun run build
             bun run tauri build --target aarch64-unknown-linux-gnu
