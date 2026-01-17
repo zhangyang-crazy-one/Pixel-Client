@@ -96,12 +96,21 @@ jobs:
             libudev-dev \
             libssl-dev \
             build-essential \
-            pkg-config
+            pkg-config \
+            file \
+            patchelf \
+            curl \
+            wget
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
+
+      - name: Install cross-compile toolchain (arm64)
+        if: matrix.target == 'aarch64-unknown-linux-gnu'
+        run: |
+          sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
 
       - name: Build Tauri app (Linux)
         run: bun run tauri build --target ${{ matrix.target }}
@@ -153,6 +162,11 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
+
+      - name: Install cross-compile toolchain (arm64)
+        if: matrix.target == 'aarch64-unknown-linux-gnu'
+        run: |
+          sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
 
       - name: Build Tauri app (Windows)
         run: bun run tauri build --target ${{ matrix.target }}
