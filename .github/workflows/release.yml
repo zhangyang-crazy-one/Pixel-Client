@@ -71,7 +71,6 @@ jobs:
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: ${{ env.BUN_VERSION }}
-          registry: 'https://registry.npmjs.org'
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -138,7 +137,6 @@ jobs:
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: ${{ env.BUN_VERSION }}
-          registry: 'https://registry.npmjs.org'
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
