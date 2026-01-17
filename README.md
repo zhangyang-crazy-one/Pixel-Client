@@ -116,7 +116,7 @@ docker run --rm \
 
 **注意**: 需要设置环境变量 `TAURI_PRIVATE_KEY` (私钥) 和 `TAURI_PRIVATE_KEY_PASSWORD` (私钥密码) 来签名应用。
 
-#### macOS (需要 Xcode 和 Rust)
+#### macOS (需要 Apple 证书，建议本地构建)
 
 ```bash
 # 安装 Rust 目标
@@ -129,7 +129,19 @@ bun run tauri build --target aarch64-apple-darwin
 bun run tauri build --target x86_64-apple-darwin
 ```
 
-**注意**: macOS 构建需要在 macOS 系统上进行，或使用 macOS CI 服务。
+**注意**: macOS 构建需要有效的 Apple 开发者证书用于代码签名和公证，建议在本地 macOS 系统上进行构建。
+
+## CI/CD 构建说明
+
+GitHub Actions Release 工作流支持以下平台自动构建：
+
+| 平台 | 状态 | 说明 |
+|------|------|------|
+| Linux x64/ arm64 | 自动构建 | 无需额外配置 |
+| Windows x64 | 自动构建 | 无需额外配置 |
+| macOS x64/ arm64 | **本地构建** | 需要 Apple 证书，无法在 CI 中自动构建 |
+
+如需 macOS 安装包，请参考上文的本地构建指南。
 
 ## 项目结构
 
