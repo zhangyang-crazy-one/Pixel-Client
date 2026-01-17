@@ -15,51 +15,16 @@ on:
       - 'tsconfig.json'
       - 'vite.config.ts'
       - '.github/workflows/**'
+      - 'src-tauri/src/**'
+      - 'src-tauri/Cargo.toml'
+      - 'src-tauri/tauri.conf.json'
   pull_request:
     branches: [main, master]
 
 jobs:
-  types-sync:
-    name: Sync TypeScript Types
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Generate TypeScript types
-        run: |
-          cd src-tauri
-          cargo test --lib -- --nocapture
-          mkdir -p ../src/types
-          cp bindings/*.ts ../src/types/ 2>/dev/null || echo "No bindings generated"
-          ls -la ../src/types/
-
-      - name: Commit generated types
-        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add src/types/
-          if git diff --cached --quiet; then
-            echo "No changes to types"
-          else
-            git commit -m "chore: sync TypeScript types from Rust" || echo "No commit needed"
-            git push || echo "Already up to date"
-          fi
-
   lint-and-type-check:
     name: Lint and Type Check
     runs-on: ubuntu-latest
-    # types-sync generates types from Rust, but frontend has its own type definitions
-    # Don't block linting if types haven't been generated yet
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -72,9 +37,6 @@ jobs:
 
       - name: Install dependencies
         run: bun install
-
-      # - name: Run ESLint
-      #   run: bunx eslint . --max-warnings 0
 
       - name: Check TypeScript types
         run: bunx tsc --noEmit
@@ -119,7 +81,51 @@ jobs:
       - name: Build frontend
         run: bun run build
 
-      - name: Build Tauri app
-        uses: tauri-apps/tauri-action@v0
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-unknown-linux-gnu
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            webkit2gtk-4.1 \
+            libsoup-3.0 \
+            libjavascriptcoregtk-4.1 \
+            libwebkit2gtk-4.1 \
+            libappindicator3-1 \
+            libasound2 \
+            libudev-dev \
+            libgirepository1.0-dev \
+            build-essential \
+            pkg-config
+
+      - name: Build Tauri app (Linux)
+        if: runner.os == 'Linux'
+        run: bun run tauri build
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+          TAURI_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_PRIVATE_KEY_PASSWORD }}
+
+      - name: Build Tauri app (macOS)
+        if: runner.os == 'macOS'
+        run: bun run tauri build
+        env:
+          TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+          TAURI_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_PRIVATE_KEY_PASSWORD }}
+
+      - name: Build Tauri app (Windows)
+        if: runner.os == 'Windows'
+        run: bun run tauri build
+        env:
+          TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+          TAURI_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_PRIVATE_KEY_PASSWORD }}
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: |
+            src-tauri/target/release/bundle/**
+          retention-days: 7
