@@ -158,6 +158,172 @@
 }
 
 /* ========================================
+   Platform-Specific Styles
+   ======================================== */
+
+/* macOS-specific titlebar styles */
+.custom-titlebar-macos {
+  height: 52px;
+  background: transparent;
+  border-bottom: none;
+  padding: 0;
+  padding-left: 0;
+}
+
+.custom-titlebar-macos .titlebar-traffic-lights {
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px;
+  -webkit-app-region: no-drag;
+}
+
+.custom-titlebar-macos .traffic-light {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  position: relative;
+  -webkit-app-region: no-drag;
+  transition: opacity 0.1s;
+}
+
+.custom-titlebar-macos .traffic-light-dot {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  opacity: 0;
+  transition: opacity 0.1s;
+}
+
+.custom-titlebar-macos .traffic-light:hover .traffic-light-dot {
+  opacity: 1;
+}
+
+.custom-titlebar-macos .traffic-light-close:hover {
+  background: rgba(255, 95, 87, 0.3);
+}
+
+.custom-titlebar-macos .traffic-light-minimize:hover {
+  background: rgba(254, 188, 46, 0.3);
+}
+
+.custom-titlebar-macos .traffic-light-maximize:hover {
+  background: rgba(40, 200, 64, 0.3);
+}
+
+/* macOS pixel theme */
+.theme-pixel.custom-titlebar-macos {
+  background: transparent;
+}
+
+.theme-pixel.custom-titlebar-macos .traffic-light-close:hover {
+  background: rgba(255, 0, 0, 0.3);
+}
+
+.theme-pixel.custom-titlebar-macos .traffic-light-minimize:hover {
+  background: rgba(0, 255, 255, 0.3);
+}
+
+.theme-pixel.custom-titlebar-macos .traffic-light-maximize:hover {
+  background: rgba(255, 0, 255, 0.3);
+}
+
+/* macOS modern theme */
+.theme-modern.custom-titlebar-macos {
+  background: transparent;
+}
+
+/* Linux-specific titlebar styles */
+.custom-titlebar-linux {
+  height: 36px;
+  background: linear-gradient(180deg, #3c3c3c 0%, #2d2d2d 100%);
+  border-bottom: 1px solid #555;
+  padding: 0 4px;
+}
+
+.custom-titlebar-linux .titlebar-button {
+  width: 40px;
+  height: 36px;
+  color: #cccccc;
+}
+
+.custom-titlebar-linux .titlebar-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+.custom-titlebar-linux .titlebar-close:hover {
+  background: #cc0000;
+  color: #ffffff;
+}
+
+.custom-titlebar-linux .titlebar-text {
+  font-family: 'Inter', 'Noto Sans SC', sans-serif;
+  font-size: 14px;
+  color: #ffffff;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+/* Linux pixel theme */
+.theme-pixel.custom-titlebar-linux {
+  background: linear-gradient(180deg, #2d2b40 0%, #1a1a2e 100%);
+  border-bottom: 2px solid #ff00ff;
+}
+
+.theme-pixel.custom-titlebar-linux .titlebar-button:hover {
+  background: #ff00ff;
+  color: #000000;
+}
+
+.theme-pixel.custom-titlebar-linux .titlebar-close:hover {
+  background: #ff0000;
+  color: #ffffff;
+}
+
+/* Linux modern theme */
+.theme-modern.custom-titlebar-linux {
+  background: linear-gradient(180deg, #3c3c3c 0%, #2d2d2d 100%);
+  border-bottom: 1px solid #555;
+}
+
+.theme-modern.custom-titlebar-linux .titlebar-text {
+  color: #ffffff;
+}
+
+.theme-modern.custom-titlebar-linux .titlebar-button {
+  color: #cccccc;
+}
+
+.theme-modern.custom-titlebar-linux .titlebar-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+/* Platform indicator helper (for debugging) */
+.platform-indicator {
+  position: fixed;
+  bottom: 4px;
+  right: 4px;
+  padding: 2px 6px;
+  font-size: 10px;
+  background: rgba(0, 0, 0, 0.5);
+  color: #888;
+  border-radius: 3px;
+  z-index: 99999;
+  pointer-events: none;
+}
+
+.platform-windows::before { content: 'Windows'; }
+.platform-macos::before { content: 'macOS'; }
+.platform-linux::before { content: 'Linux'; }
+
+/* ========================================
    Pixel UI Theme Customizations
    ======================================== */
 .theme-pixel {
