@@ -12,14 +12,7 @@ export const API_BASE_URL = 'http://localhost:3000';
 export const API_KEY = import.meta.env.VITE_LLM_API_KEY || '';
 
 export const INITIAL_PROVIDERS: LLMProvider[] = []; 
-export const INITIAL_MODELS: LLMModel[] = []; 
-
-// Kept for compatibility, not used
-export const INITIAL_ACE_CONFIG: AceConfig = {
-  fastModelId: '',
-  reflectorModelId: '',
-  curatorModelId: ''
-};
+export const INITIAL_MODELS: LLMModel[] = [];
 
 // Use React.createElement to avoid JSX syntax in .ts file
 export const PROVIDER_LOGOS: Record<string, React.ReactNode> = {

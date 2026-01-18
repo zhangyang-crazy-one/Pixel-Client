@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Theme, LLMProvider, LLMModel, ModelType, AceConfig, Language, ProviderAdapter, McpServer, McpStats, McpRegistrationConfig } from '../types';
+import { Theme, LLMProvider, LLMModel, ModelType, Language, ProviderAdapter, McpServer, McpStats, McpRegistrationConfig } from '../types';
 import { PixelButton, PixelInput, PixelCard, PixelSelect, PixelBadge } from './PixelUI';
 import { THEME_STYLES, TRANSLATIONS, getProviderIcon } from '../constants';
 import { Trash2, Plus, Zap, X, Cpu, Save, AlertTriangle, Edit, Smile, Star, Activity, Wifi, Loader2, Server, Terminal, Box, Play, PauseCircle } from 'lucide-react';
@@ -11,10 +11,8 @@ interface ModelManagerProps {
   language: Language;
   providers: LLMProvider[];
   models: LLMModel[];
-  aceConfig: AceConfig;
   onUpdateProviders: (providers: LLMProvider[]) => void;
   onUpdateModels: (models: LLMModel[]) => void;
-  onUpdateAceConfig: (config: AceConfig) => void;
   onClose: () => void;
 }
 
@@ -23,10 +21,8 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
   language,
   providers,
   models,
-  aceConfig,
   onUpdateProviders,
   onUpdateModels,
-  onUpdateAceConfig,
   onClose
 }) => {
   const [activeTab, setActiveTab] = useState<'providers' | 'models' | 'ace' | 'mascot' | 'mcp'>('providers');
@@ -61,8 +57,6 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
     dimensions: 1536,
     isDefault: false
   });
-  // Local State for ACE Config
-  const [localAceConfig, setLocalAceConfig] = useState<AceConfig>(aceConfig);
 
   // Mascot Config State
   const [mascotSystemPrompt, setMascotSystemPrompt] = useState('');
@@ -284,16 +278,13 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
   };
 
   const handleSaveAceConfig = () => {
-      const isConfigured = aceConfig.fastModelId || aceConfig.reflectorModelId || aceConfig.curatorModelId;
-      if (isConfigured) {
-          setShowConfirmDialog(true);
-      } else {
-          confirmSaveAceConfig();
-      }
+      // ACE config removed
+      setTestStatus('ace_saved');
+      setTimeout(() => setTestStatus(null), 2000);
   };
 
   const confirmSaveAceConfig = () => {
-      onUpdateAceConfig(localAceConfig);
+      // ACE config removed
       setShowConfirmDialog(false);
       setTestStatus('ace_saved');
       setTimeout(() => setTestStatus(null), 2000);
@@ -479,66 +470,11 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
         </div>
 
         {activeTab === 'ace' ? (
-          <div className="flex-1 overflow-y-auto p-4 flex flex-col items-center">
-             <div className="max-w-2xl w-full space-y-8">
-                <div className="border-b-2 border-black pb-2 mb-4">
-                    <h3 className="text-xl font-bold flex items-center gap-2">
-                        <Cpu size={24} /> {t.aceConfigTitle}
-                    </h3>
-                    <p className="opacity-70 text-sm mt-1">{t.aceConfigDesc}</p>
-                </div>
-
-                <div className="space-y-6">
-                    <div className="bg-white/5 p-4 border-2 border-black">
-                        <PixelSelect 
-                            theme={theme} 
-                            label={t.fastModel} 
-                            value={localAceConfig.fastModelId} 
-                            onChange={(e) => setLocalAceConfig({...localAceConfig, fastModelId: e.target.value})}
-                        >
-                            <option value="">{t.selectModel}</option>
-                            {chatModels.map(m => <option key={m.id} value={m.id}>{m.name} ({m.modelId})</option>)}
-                        </PixelSelect>
-                        <div className="text-xs opacity-50 mt-1">{t.fastModelDesc}</div>
-                    </div>
-
-                    <div className="bg-white/5 p-4 border-2 border-black">
-                        <PixelSelect 
-                            theme={theme} 
-                            label={t.reflectorModel} 
-                            value={localAceConfig.reflectorModelId} 
-                            onChange={(e) => setLocalAceConfig({...localAceConfig, reflectorModelId: e.target.value})}
-                        >
-                            <option value="">{t.selectModel}</option>
-                            {chatModels.map(m => <option key={m.id} value={m.id}>{m.name} ({m.modelId})</option>)}
-                        </PixelSelect>
-                        <div className="text-xs opacity-50 mt-1">{t.reflectorModelDesc}</div>
-                    </div>
-
-                    <div className="bg-white/5 p-4 border-2 border-black">
-                        <PixelSelect 
-                            theme={theme} 
-                            label={t.curatorModel} 
-                            value={localAceConfig.curatorModelId} 
-                            onChange={(e) => setLocalAceConfig({...localAceConfig, curatorModelId: e.target.value})}
-                        >
-                            <option value="">{t.selectModel}</option>
-                            {chatModels.map(m => <option key={m.id} value={m.id}>{m.name} ({m.modelId})</option>)}
-                        </PixelSelect>
-                        <div className="text-xs opacity-50 mt-1">{t.curatorModelDesc}</div>
-                    </div>
-                </div>
-                
-                <div className="mt-8 p-4 border-2 border-dashed border-black/30 text-center opacity-50">
-                    {t.aceNote}
-                </div>
-
-                <div className="flex justify-end gap-4 items-center border-t-4 border-black pt-4">
-                    {testStatus === 'ace_saved' && <span className="text-green-500 font-bold animate-pulse">{t.configSaved}</span>}
-                    <PixelButton theme={theme} onClick={handleSaveAceConfig}>
-                         <Save className="w-4 h-4" /> {t.saveConfig}
-                    </PixelButton>
-                </div>
+          <div className="flex-1 overflow-y-auto p-4 flex flex-col items-center justify-center">
+             <div className="text-center opacity-50">
+                 <Cpu size={48} className="mx-auto mb-4" />
+                 <p className="text-lg font-bold">ACE Agent Config</p>
+                 <p className="text-sm">This feature has been removed.</p>
              </div>
           </div>
         ) : activeTab === 'mascot' ? (
