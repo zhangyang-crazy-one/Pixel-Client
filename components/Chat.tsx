@@ -871,62 +871,7 @@ export const Chat: React.FC<ChatProps> = ({
                     </>
                 )}
 
-                <div className="relative" ref={themeRef}>
-                    {showThemeMenu && (
-                        <div className={`
-                            absolute bottom-full left-0 mb-2 w-48 
-                            ${styles.borderWidth} ${styles.borderColor} ${styles.radius}
-                            ${styles.secondary} ${styles.text} ${styles.shadow}
-                            flex flex-col z-[70] overflow-hidden
-                        `}>
-                             <ThemeOption targetTheme={Theme.LIGHT} icon={<Sun size={14}/>} label={t.themeDay} />
-                             <ThemeOption targetTheme={Theme.DARK} icon={<Moon size={14}/>} label={t.themeNight} />
-                             <ThemeOption targetTheme={Theme.MODERN_LIGHT} icon={<Laptop size={14}/>} label={t.themeModernDay} />
-                             <ThemeOption targetTheme={Theme.MODERN_DARK} icon={<Laptop size={14}/>} label={t.themeModernNight} />
-                             <ThemeOption targetTheme={Theme.CLAY} icon={<Coffee size={14}/>} label={t.themeClay} />
-                             <ThemeOption targetTheme={Theme.BIOLUMINESCENCE} icon={<Zap size={14}/>} label={t.themeBiolum} />
-                        </div>
-                    )}
-                    <PixelButton 
-                        theme={theme} 
-                        variant="secondary" 
-                        className="w-9 h-9 !p-0 flex items-center justify-center" 
-                        title={t.changeTheme}
-                        onClick={() => {
-                            if (!showThemeMenu) setShowLangMenu(false);
-                            setShowThemeMenu(!showThemeMenu);
-                        }}
-                    >
-                        <Palette size={20} />
-                    </PixelButton>
-                </div>
 
-                <div className="relative" ref={langRef}>
-                    {showLangMenu && (
-                        <div className={`
-                            absolute bottom-full left-0 mb-2 w-32 
-                            ${styles.borderWidth} ${styles.borderColor} ${styles.radius}
-                            ${styles.secondary} ${styles.text} ${styles.shadow}
-                            flex flex-col z-[70] overflow-hidden
-                        `}>
-                             <LangOption targetLang="en" label="English" />
-                             <LangOption targetLang="zh" label="中文" />
-                             <LangOption targetLang="ja" label="日本語" />
-                        </div>
-                    )}
-                    <PixelButton 
-                        theme={theme} 
-                        variant="secondary" 
-                        className="w-9 h-9 !p-0 flex items-center justify-center" 
-                        title={t.changeLanguage}
-                        onClick={() => {
-                             if (!showLangMenu) setShowThemeMenu(false);
-                             setShowLangMenu(!showLangMenu);
-                        }}
-                    >
-                        <Globe size={20} />
-                    </PixelButton>
-                </div>
              </div>
              
              <div className="flex gap-2">

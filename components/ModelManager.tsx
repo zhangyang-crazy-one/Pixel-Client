@@ -2,8 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { Theme, LLMProvider, LLMModel, ModelType, Language, ProviderAdapter, McpServer, McpStats, McpRegistrationConfig } from '../types';
 import { PixelButton, PixelInput, PixelCard, PixelSelect, PixelBadge } from './PixelUI';
-import { THEME_STYLES, TRANSLATIONS, getProviderIcon } from '../constants';
-import { Trash2, Plus, Zap, X, Cpu, Save, AlertTriangle, Edit, Smile, Star, Activity, Wifi, Loader2, Server, Terminal, Box, Play, PauseCircle } from 'lucide-react';
+import { THEME_STYLES, TRANSLATIONS, getProviderIcon, getBackendConfig, saveBackendConfig, clearBackendConfig } from '../constants';
+import { Trash2, Plus, Zap, X, Save, Edit, Smile, Star, Activity, Wifi, Loader2, Server, Terminal, Box, Play, PauseCircle } from 'lucide-react';
 import { apiClient } from '../services/apiClient';
 
 interface ModelManagerProps {
@@ -25,9 +25,8 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
   onUpdateModels,
   onClose
 }) => {
-  const [activeTab, setActiveTab] = useState<'providers' | 'models' | 'ace' | 'mascot' | 'mcp'>('providers');
+  const [activeTab, setActiveTab] = useState<'providers' | 'models' | 'mascot' | 'mcp' | 'backend'>('providers');
   const [testStatus, setTestStatus] = useState<string | null>(null);
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const styles = THEME_STYLES[theme];
   const t = TRANSLATIONS[language];
 
@@ -68,6 +67,22 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
   const [newMcpServer, setNewMcpServer] = useState<{
       id: string, command: string, args: string, env: string
   }>({ id: '', command: '', args: '', env: '{}' });
+
+  // Backend Config State
+  const [backendConfig, setBackendConfig] = useState({
+    apiBaseUrl: '',
+    apiKey: '',
+  });
+  const [backendSaveStatus, setBackendSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+
+  // Load Backend Config on mount
+  useEffect(() => {
+    const config = getBackendConfig();
+    setBackendConfig({
+      apiBaseUrl: config.apiBaseUrl,
+      apiKey: config.apiKey,
+    });
+  }, []);
 
   // Fetch Data on Open
   useEffect(() => {
@@ -249,6 +264,30 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
       }
   };
 
+  // Backend Config Handlers
+  const handleSaveBackendConfig = () => {
+    setBackendSaveStatus('saving');
+    try {
+      saveBackendConfig(backendConfig);
+      setTimeout(() => setBackendSaveStatus('saved'), 500);
+      setTimeout(() => setBackendSaveStatus('idle'), 2000);
+    } catch (error) {
+      alert(t.saveFailed);
+      setBackendSaveStatus('idle');
+    }
+  };
+
+  const handleResetBackendConfig = () => {
+    clearBackendConfig();
+    const defaultConfig = getBackendConfig();
+    setBackendConfig({
+      apiBaseUrl: defaultConfig.apiBaseUrl,
+      apiKey: defaultConfig.apiKey,
+    });
+    setBackendSaveStatus('saved');
+    setTimeout(() => setBackendSaveStatus('idle'), 2000);
+  };
+
   const handleTestModel = async () => {
     if (!newModel.providerId || !newModel.modelId) return;
     
@@ -275,19 +314,6 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
     } finally {
         setIsTestingModel(false);
     }
-  };
-
-  const handleSaveAceConfig = () => {
-      // ACE config removed
-      setTestStatus('ace_saved');
-      setTimeout(() => setTestStatus(null), 2000);
-  };
-
-  const confirmSaveAceConfig = () => {
-      // ACE config removed
-      setShowConfirmDialog(false);
-      setTestStatus('ace_saved');
-      setTimeout(() => setTestStatus(null), 2000);
   };
 
   const handleSaveMascotConfig = () => {
@@ -395,32 +421,6 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-      {showConfirmDialog && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm">
-            <PixelCard theme={theme} className={`w-[90%] max-w-[400px] ${styles.bg} ${styles.text} flex flex-col gap-4 border-4 border-red-500 animate-float`}>
-                <div className="flex items-center gap-2 text-red-500 font-bold text-xl border-b-2 border-black pb-2">
-                    <AlertTriangle /> {t.warning}
-                </div>
-                <div className="py-2">
-                    <p className="font-bold text-lg leading-tight mb-2">
-                        {t.confirmModify}
-                    </p>
-                    <p className="text-sm opacity-80">
-                        {t.confirmModifyDesc}
-                    </p>
-                </div>
-                <div className="flex justify-end gap-4 mt-2">
-                    <PixelButton theme={theme} variant="secondary" onClick={() => setShowConfirmDialog(false)}>
-                        {t.cancel}
-                    </PixelButton>
-                    <PixelButton theme={theme} variant="danger" onClick={confirmSaveAceConfig}>
-                        {t.confirm}
-                    </PixelButton>
-                </div>
-            </PixelCard>
-        </div>
-      )}
-
       <PixelCard theme={theme} className={`w-full max-w-4xl h-[80vh] flex flex-col ${styles.bg} ${styles.text} overflow-hidden`}>
         <div className="flex justify-between items-center mb-4 border-b-4 border-black pb-2">
           <h2 className={`text-2xl font-bold flex items-center gap-2`}>
@@ -439,19 +439,12 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
           >
             {t.providers}
           </PixelButton>
-          <PixelButton 
-            theme={theme} 
-            onClick={() => setActiveTab('models')} 
+          <PixelButton
+            theme={theme}
+            onClick={() => setActiveTab('models')}
             variant={activeTab === 'models' ? 'primary' : 'secondary'}
           >
             {t.models}
-          </PixelButton>
-          <PixelButton 
-            theme={theme} 
-            onClick={() => setActiveTab('ace')} 
-            variant={activeTab === 'ace' ? 'primary' : 'secondary'}
-          >
-            {t.aceAgent}
           </PixelButton>
            <PixelButton 
             theme={theme} 
@@ -467,17 +460,16 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
           >
             {t.mcp}
           </PixelButton>
+          <PixelButton
+            theme={theme}
+            onClick={() => setActiveTab('backend')}
+            variant={activeTab === 'backend' ? 'primary' : 'secondary'}
+          >
+            {t.backend}
+          </PixelButton>
         </div>
 
-        {activeTab === 'ace' ? (
-          <div className="flex-1 overflow-y-auto p-4 flex flex-col items-center justify-center">
-             <div className="text-center opacity-50">
-                 <Cpu size={48} className="mx-auto mb-4" />
-                 <p className="text-lg font-bold">ACE Agent Config</p>
-                 <p className="text-sm">This feature has been removed.</p>
-             </div>
-          </div>
-        ) : activeTab === 'mascot' ? (
+        {activeTab === 'mascot' ? (
              <div className="flex-1 overflow-y-auto p-4 flex flex-col items-center">
                  <div className="max-w-2xl w-full space-y-8">
                     <div className="border-b-2 border-black pb-2 mb-4">
@@ -504,8 +496,75 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
                      <div className="flex justify-end gap-4 items-center border-t-4 border-black pt-4">
                         {testStatus === 'mascot_saved' && <span className="text-green-500 font-bold animate-pulse">{t.configSaved}</span>}
                         <PixelButton theme={theme} onClick={handleSaveMascotConfig}>
-                             <Save className="w-4 h-4" /> {t.saveConfig}
+                              <Save className="w-4 h-4" /> {t.saveConfig}
                         </PixelButton>
+                    </div>
+                  </div>
+              </div>
+        ) : activeTab === 'backend' ? (
+             <div className="flex-1 overflow-y-auto p-4">
+                 <div className="max-w-2xl w-full space-y-6">
+                    <div className="border-b-4 border-black pb-2 mb-4">
+                        <h3 className="text-xl font-bold flex items-center gap-2">
+                            <Server size={24} /> {t.backendConfig}
+                        </h3>
+                        <p className={`text-sm mt-1 ${styles.textMuted}`}>{t.backendNote}</p>
+                    </div>
+
+                    <div className="space-y-4">
+                        <div>
+                            <label className={`text-sm font-bold uppercase block mb-2 ${styles.text}`}>
+                                {t.apiBaseUrl}
+                            </label>
+                            <input
+                                type="text"
+                                value={backendConfig.apiBaseUrl}
+                                onChange={(e) => setBackendConfig(prev => ({ ...prev, apiBaseUrl: e.target.value }))}
+                                className={`
+                                    w-full p-3 outline-none border-2 border-black
+                                    ${styles.inputBg} ${styles.text}
+                                    focus:shadow-[4px_4px_0px_0px_rgba(0,0,0,0.5)]
+                                    transition-all duration-200
+                                `}
+                                placeholder="http://localhost:3000"
+                            />
+                        </div>
+
+                        <div>
+                            <label className={`text-sm font-bold uppercase block mb-2 ${styles.text}`}>
+                                {t.apiKey}
+                            </label>
+                            <input
+                                type="password"
+                                value={backendConfig.apiKey}
+                                onChange={(e) => setBackendConfig(prev => ({ ...prev, apiKey: e.target.value }))}
+                                className={`
+                                    w-full p-3 outline-none border-2 border-black
+                                    ${styles.inputBg} ${styles.text}
+                                    focus:shadow-[4px_4px_0px_0px_rgba(0,0,0,0.5)]
+                                    transition-all duration-200
+                                `}
+                                placeholder="Enter API key"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="flex justify-between items-center pt-4 border-t-4 border-black">
+                        <PixelButton
+                            theme={theme}
+                            variant="secondary"
+                            onClick={handleResetBackendConfig}
+                        >
+                            {t.resetToDefault}
+                        </PixelButton>
+                        <div className="flex items-center gap-4">
+                            {backendSaveStatus === 'saved' && (
+                                <span className="text-green-500 font-bold animate-pulse">{t.configSaved}</span>
+                            )}
+                            <PixelButton theme={theme} onClick={handleSaveBackendConfig}>
+                                <Save className="w-4 h-4" /> {t.saveConfig}
+                            </PixelButton>
+                        </div>
                     </div>
                  </div>
              </div>

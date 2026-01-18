@@ -5,7 +5,7 @@
   "identifier": "com.pixel.client",
   "build": {
     "devUrl": "http://localhost:5173",
-    "beforeDevCommand": "bun run dev:vite",
+    "beforeDevCommand": "bunx vite",
     "beforeBuildCommand": "bun run build",
     "frontendDist": "../dist"
   },
