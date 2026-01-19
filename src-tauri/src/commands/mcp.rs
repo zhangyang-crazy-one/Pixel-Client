@@ -102,8 +102,8 @@ fn send_mcp_request(
         
         // Parse Content-Length header
         if !headers_complete {
-            if line.starts_with("Content-Length:") {
-                content_length = line[15..].trim().parse::<usize>().map_err(|e| e.to_string())?;
+            if let Some(length_str) = line.strip_prefix("Content-Length:") {
+                content_length = length_str.trim().parse::<usize>().map_err(|e| e.to_string())?;
             } else if line.is_empty() {
                 headers_complete = true;
             }

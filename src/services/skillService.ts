@@ -17,14 +17,17 @@ export interface SkillParameter {
   default?: unknown;
 }
 
-export interface Skill {
+export interface SkillSummary {
   id: string;
   name: string;
   description: string;
   category: string;
+  enabled: boolean;
+}
+
+export interface Skill extends SkillSummary {
   parameters: SkillParameter[];
   code: string;
-  enabled: boolean;
   createdAt: number;
   updatedAt: number;
 }
@@ -56,14 +59,14 @@ export interface SkillFormData {
 /**
  * Get all skills
  */
-export async function getSkills(enabledOnly = false): Promise<Skill[]> {
+export async function getSkills(enabledOnly = false): Promise<SkillSummary[]> {
   return apiClient.getSkills(enabledOnly);
 }
 
 /**
  * Get skills by category
  */
-export async function getSkillsByCategory(category: string): Promise<Skill[]> {
+export async function getSkillsByCategory(category: string): Promise<SkillSummary[]> {
   const skills = await getSkills();
   return skills.filter(s => s.category === category);
 }
@@ -71,7 +74,7 @@ export async function getSkillsByCategory(category: string): Promise<Skill[]> {
 /**
  * Create a new skill
  */
-export async function createSkill(data: SkillFormData): Promise<Skill> {
+export async function createSkill(data: SkillFormData): Promise<SkillSummary> {
   return apiClient.createSkill(
     data.name,
     data.description,
@@ -108,10 +111,16 @@ export async function toggleSkill(skillId: string): Promise<boolean> {
 /**
  * Import a skill from JSON
  */
-export async function importSkill(skillJson: string): Promise<Skill> {
+export async function importSkill(skillJson: string): Promise<SkillSummary> {
   try {
-    const parsed = JSON.parse(skillJson);
-    return apiClient.importSkill(parsed);
+    const parsed = JSON.parse(skillJson) as SkillFormData;
+    return apiClient.createSkill(
+      parsed.name,
+      parsed.description,
+      parsed.category,
+      parsed.parameters,
+      parsed.code
+    );
   } catch (error) {
     throw new Error(`Invalid skill JSON: ${error}`);
   }
@@ -121,7 +130,8 @@ export async function importSkill(skillJson: string): Promise<Skill> {
  * Export a skill to JSON string
  */
 export async function exportSkill(skillId: string): Promise<string> {
-  const skill = await apiClient.getSkill(skillId);
+  const skills = await apiClient.getSkills(false);
+  const skill = skills.find(s => s.id === skillId);
   if (!skill) {
     throw new Error('Skill not found');
   }
@@ -406,7 +416,7 @@ export function formatExecutionTime(ms: number): string {
 /**
  * Get skill status badge info
  */
-export function getSkillStatusInfo(skill: Skill): {
+export function getSkillStatusInfo(skill: SkillSummary): {
   label: string;
   color: 'green' | 'gray';
 } {

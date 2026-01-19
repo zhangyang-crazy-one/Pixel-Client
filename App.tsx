@@ -1,17 +1,17 @@
 
 import React, { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
-import { Theme, LLMProvider, LLMModel, Message, AceConfig, Language, ChatSession } from './types';
-import { INITIAL_ACE_CONFIG, THEME_STYLES, TRANSLATIONS, getProviderIcon } from './constants';
+import { Theme, LLMProvider, LLMModel, Message, Language, ChatSession } from './types';
+import { THEME_STYLES, TRANSLATIONS, getProviderIcon } from './constants';
 import { PixelButton, PixelSelect, PixelCard } from './components/PixelUI';
 import { ModelManager } from './components/ModelManager';
 import { Chat } from './components/Chat';
-import { Mascot } from './components/Mascot';
+
 import { CustomTitlebar } from './components/CustomTitlebar';
 import { SettingsDropdown } from './components/SettingsDropdown';
 import { ToastProvider, useToast } from './components/Toast';
-import { Settings, Search, ChevronLeft, ChevronRight, Trash2, RefreshCcw, AlertCircle, MessageSquare, MessageSquareOff, Pencil, MessageCircle, Paintbrush } from 'lucide-react';
+import { Settings, Search, ChevronLeft, ChevronRight, Trash2, RefreshCcw, AlertCircle, Pencil, MessageCircle, Paintbrush } from 'lucide-react';
 import { apiClient } from './services/apiClient';
-import { streamChatResponse, fetchMascotComment } from './services/llmService';
+import { streamChatResponse } from './services/llmService';
 
 // Lazy load ExcalidrawWrapper
 const ExcalidrawWrapper = lazy(() => import('./components/ExcalidrawWrapper'));
@@ -70,7 +70,6 @@ const App: React.FC<AppProps> = ({ onThemeChange }) => {
   const [language, setLanguage] = useState<Language>('zh');
   const [providers, setProviders] = useState<LLMProvider[]>([]);
   const [models, setModels] = useState<LLMModel[]>([]);
-  const [aceConfig, setAceConfig] = useState<AceConfig>(INITIAL_ACE_CONFIG);
   const [activeModelId, setActiveModelId] = useState<string>('');
   const [isModelManagerOpen, setIsModelManagerOpen] = useState(false);
 
@@ -94,12 +93,8 @@ const App: React.FC<AppProps> = ({ onThemeChange }) => {
   const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
 
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [mascotState, setMascotState] = useState<'idle' | 'thinking' | 'happy' | 'shocked'>('idle');
-  const [mascotComment, setMascotComment] = useState<string | null>(null);
-  const [isMascotEnabled, setIsMascotEnabled] = useState(true);
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [rainbowMode, setRainbowMode] = useState(false);
 
   const styles = THEME_STYLES[theme];
   const t = TRANSLATIONS[language];
@@ -186,46 +181,6 @@ const App: React.FC<AppProps> = ({ onThemeChange }) => {
     }
   }, [models, activeModelId]);
 
-  useEffect(() => {
-    if (messages.length === 0) return;
-    if (!isMascotEnabled) return;
-    if (Math.random() < 0.3 && !mascotComment && activeModel) {
-        const fetchComment = async () => {
-            const systemPrompt = localStorage.getItem('pixel_mascot_system_prompt') || '';
-            const comment = await fetchMascotComment(messages, activeModel.modelId, systemPrompt);
-            if (comment) setMascotComment(comment);
-        };
-        fetchComment();
-    }
-  }, [messages.length, activeModel, isMascotEnabled]);
-
-  const handleMascotSpeechEnd = useCallback(() => {
-    setMascotComment(null);
-  }, []);
-
-  const handleRainbowTrigger = () => {
-      setRainbowMode(prev => !prev);
-      setMascotState('shocked');
-  };
-
-  useEffect(() => {
-    const konami = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
-    let cursor = 0;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === konami[cursor]) {
-        cursor++;
-        if (cursor === konami.length) {
-          handleRainbowTrigger();
-          alert("★ KONAMI CODE ACTIVATED: RAINBOW MODE ★");
-          cursor = 0;
-        }
-      } else {
-        cursor = 0;
-      }
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, []);
 
   // Keyboard shortcuts (Ctrl+K for search, Ctrl+M to cycle theme)
   useEffect(() => {
@@ -306,10 +261,9 @@ const App: React.FC<AppProps> = ({ onThemeChange }) => {
          setMessages(prev => [...prev, msg]);
          return; 
      }
-     setMessages(prev => [...prev, msg]);
-     setIsStreaming(true);
-     setMascotState('thinking');
-     if (!activeModel || !activeProvider) {
+      setMessages(prev => [...prev, msg]);
+      setIsStreaming(true);
+      if (!activeModel || !activeProvider) {
          setIsStreaming(false);
          return;
      }
@@ -333,20 +287,17 @@ const App: React.FC<AppProps> = ({ onThemeChange }) => {
          activeSessionId, ac.signal, options?.deepThinkingEnabled
      );
 
-     if (abortControllerRef.current === ac) {
-         setIsStreaming(false);
-         setCurrentRequestId(null);
-         setMascotState('happy');
-         setTimeout(() => setMascotState('idle'), 2000);
-         refreshSessions();
-         abortControllerRef.current = null;
-     }
+      if (abortControllerRef.current === ac) {
+          setIsStreaming(false);
+          setCurrentRequestId(null);
+          refreshSessions();
+          abortControllerRef.current = null;
+      }
   };
 
   if (isLoading) {
       return (
           <div className={`fixed inset-0 z-50 flex items-center justify-center ${styles.bg} ${styles.text} flex-col gap-4`}>
-               <Mascot theme={theme} state="thinking" className="w-32 h-32 animate-bounce" />
                <div className="text-2xl font-bold animate-pulse tracking-widest">INITIALIZING PIXELVERSE...</div>
           </div>
       );
@@ -359,7 +310,6 @@ const App: React.FC<AppProps> = ({ onThemeChange }) => {
     <div className={`
       flex flex-col h-screen w-screen overflow-hidden ${styles.bg} ${styles.text} transition-colors duration-500
       ${!isModern ? 'scanline-effect' : ''}
-      ${rainbowMode ? 'rainbow-mode' : ''}
       ${styles.font} ${rootThemeClass}
     `}>
       {/* Custom Titlebar for Tauri window controls */}
@@ -440,27 +390,6 @@ const App: React.FC<AppProps> = ({ onThemeChange }) => {
                 </div>
             ))}
         </div>
-
-        <div className="p-2 pb-8 flex items-end justify-center relative">
-            <Mascot 
-                theme={theme} 
-                state={mascotState} 
-                className={`w-32 h-32 ${isModern ? 'opacity-90 grayscale-[0.2]' : ''}`}
-                speechText={mascotComment}
-                onSpeechEnd={handleMascotSpeechEnd}
-            />
-            <button 
-                onClick={() => setIsMascotEnabled(!isMascotEnabled)}
-                className={`
-                    absolute bottom-4 right-4 p-1.5 ${styles.radius} ${styles.borderWidth} ${styles.borderColor} ${styles.shadow}
-                    transition-all active:translate-y-0.5 active:shadow-none
-                    ${isMascotEnabled ? 'bg-green-400 text-black' : 'bg-gray-400 text-gray-700'}
-                `}
-                title={isMascotEnabled ? "Mascot Speech: ON" : "Mascot Speech: OFF"}
-            >
-                {isMascotEnabled ? <MessageSquare size={14} /> : <MessageSquareOff size={14} />}
-            </button>
-        </div>
       </div>
 
       <div className="flex-1 flex flex-col relative z-10 h-full">
@@ -529,23 +458,21 @@ const App: React.FC<AppProps> = ({ onThemeChange }) => {
 
          <div className="flex-1 overflow-hidden bg-white/5 relative">
              {viewMode === 'chat' ? (
-               <Chat
-                  theme={theme}
-                  language={language}
-                  messages={messages}
-                  activeModel={activeModel}
-                  provider={activeProvider}
-                  onSendMessage={handleSendMessage}
-                  onUpdateMessage={handleUpdateMessage}
-                  setMascotState={setMascotState}
-                  onTriggerRainbow={handleRainbowTrigger}
-                  setTheme={setTheme}
-                  setLanguage={setLanguage}
-                  isMoonlightUnlocked={false}
-                  searchQuery={searchQuery}
-                  onStop={handleStopGeneration}
-                  isStreaming={isStreaming}
-               />
+              <Chat
+                   theme={theme}
+                   language={language}
+                   messages={messages}
+                   activeModel={activeModel}
+                   provider={activeProvider}
+                   onSendMessage={handleSendMessage}
+                   onUpdateMessage={handleUpdateMessage}
+                   setTheme={setTheme}
+                   setLanguage={setLanguage}
+                   isMoonlightUnlocked={false}
+                   searchQuery={searchQuery}
+                   onStop={handleStopGeneration}
+                   isStreaming={isStreaming}
+                />
              ) : (
                <Suspense fallback={
                  <div className={`flex items-center justify-center h-full ${styles.text}`}>
@@ -565,10 +492,8 @@ const App: React.FC<AppProps> = ({ onThemeChange }) => {
             language={language}
             providers={providers}
             models={models}
-            aceConfig={aceConfig}
             onUpdateProviders={setProviders}
             onUpdateModels={setModels}
-            onUpdateAceConfig={setAceConfig}
             onClose={() => setIsModelManagerOpen(false)}
         />
       )}

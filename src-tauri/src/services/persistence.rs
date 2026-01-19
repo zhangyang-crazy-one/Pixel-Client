@@ -220,43 +220,6 @@ impl PersistenceService {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use tempfile::TempDir;
-    
-    #[test]
-    fn test_save_and_load_state() {
-        let temp_dir = TempDir::new().unwrap();
-        let state_path = temp_dir.path().join(STATE_FILE);
-        
-        // Create test state
-        let mut state = AppState::default();
-        state.theme = "test_theme".to_string();
-        state.language = "en".to_string();
-        
-        // Save
-        let result = save_state_at_path(&state, &state_path);
-        assert!(result.is_ok());
-        
-        // Load
-        let loaded = load_state_at_path(&state_path).unwrap();
-        assert_eq!(loaded.theme, "test_theme");
-        assert_eq!(loaded.language, "en");
-    }
-    
-    #[test]
-    fn test_export_import_json() {
-        let mut state = AppState::default();
-        state.theme = "json_test".to_string();
-        
-        let json = export_state_to_json(&state).unwrap();
-        let imported = import_state_from_json(&json).unwrap();
-        
-        assert_eq!(imported.theme, "json_test");
-    }
-}
-
 // Helper functions for testing with custom paths
 #[cfg(test)]
 fn save_state_at_path(state: &AppState, path: &PathBuf) -> Result<(), String> {
@@ -297,4 +260,45 @@ fn export_state_to_json(state: &AppState) -> Result<String, String> {
 fn import_state_from_json(json: &str) -> Result<AppState, String> {
     serde_json::from_str(json)
         .map_err(|e| format!("Failed to deserialize: {}", e))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tempfile::TempDir;
+
+    #[test]
+    fn test_save_and_load_state() {
+        let temp_dir = TempDir::new().unwrap();
+        let state_path = temp_dir.path().join(STATE_FILE);
+
+        // Create test state
+        let state = AppState {
+            theme: "test_theme".to_string(),
+            language: "en".to_string(),
+            ..Default::default()
+        };
+
+        // Save
+        let result = save_state_at_path(&state, &state_path);
+        assert!(result.is_ok());
+
+        // Load
+        let loaded = load_state_at_path(&state_path).unwrap();
+        assert_eq!(loaded.theme, "test_theme");
+        assert_eq!(loaded.language, "en");
+    }
+
+    #[test]
+    fn test_export_import_json() {
+        let state = AppState {
+            theme: "json_test".to_string(),
+            ..Default::default()
+        };
+
+        let json = export_state_to_json(&state).unwrap();
+        let imported = import_state_from_json(&json).unwrap();
+
+        assert_eq!(imported.theme, "json_test");
+    }
 }

@@ -1,6 +1,6 @@
 [package]
 name = "pixel-client"
-version = "0.1.0"
+version = "1.0.0"
 description = "Pixel-Client Tauri v2 Application"
 authors = ["Pixel-Client Team"]
 edition = "2021"

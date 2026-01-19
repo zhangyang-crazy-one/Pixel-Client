@@ -103,7 +103,7 @@ pub async fn save_excalidraw_scene(
         source: "https://pixel-client.tauri".to_string(),
         elements: elements.as_array()
             .cloned()
-            .unwrap_or_else(|| Vec::new()),
+            .unwrap_or_default(),
         app_state,
         files: json!({}),
     };

@@ -21,8 +21,6 @@ interface ChatProps {
   provider: LLMProvider | null;
   onSendMessage: (msg: Message, options?: { deepThinkingEnabled: boolean }) => void;
   onUpdateMessage: (id: string, content: string) => void;
-  setMascotState: (state: 'idle' | 'thinking' | 'happy' | 'shocked') => void;
-  onTriggerRainbow: () => void;
   setTheme: (theme: Theme) => void;
   setLanguage: (lang: Language) => void;
   isMoonlightUnlocked: boolean;
@@ -628,7 +626,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ msg, theme, la
 
 export const Chat: React.FC<ChatProps> = ({ 
   theme, language, messages, activeModel, provider,
-  onSendMessage, onUpdateMessage, setMascotState, onTriggerRainbow,
+  onSendMessage, onUpdateMessage,
   setTheme, setLanguage, isMoonlightUnlocked, searchQuery = '', onStop,
   isStreaming: externalIsStreaming = false
 }) => {
@@ -728,11 +726,6 @@ export const Chat: React.FC<ChatProps> = ({
   };
 
   const handleSend = async () => {
-    if (input.trim() === '/upup downdown left right') {
-        onTriggerRainbow();
-        setInput('');
-        return;
-    }
     if ((!input.trim() && pendingImages.length === 0) || !activeModel || !provider || isStreaming) return;
     shouldAutoScrollRef.current = true;
     const userMsg: Message = {
@@ -745,7 +738,6 @@ export const Chat: React.FC<ChatProps> = ({
     onSendMessage(userMsg, { deepThinkingEnabled: isDeepThinkingEnabled });
     setInput('');
     setPendingImages([]);
-    setMascotState('thinking');
     setLocalIsStreaming(true);
   };
 
@@ -879,62 +871,7 @@ export const Chat: React.FC<ChatProps> = ({
                     </>
                 )}
 
-                <div className="relative" ref={themeRef}>
-                    {showThemeMenu && (
-                        <div className={`
-                            absolute bottom-full left-0 mb-2 w-48 
-                            ${styles.borderWidth} ${styles.borderColor} ${styles.radius}
-                            ${styles.secondary} ${styles.text} ${styles.shadow}
-                            flex flex-col z-[70] overflow-hidden
-                        `}>
-                             <ThemeOption targetTheme={Theme.LIGHT} icon={<Sun size={14}/>} label={t.themeDay} />
-                             <ThemeOption targetTheme={Theme.DARK} icon={<Moon size={14}/>} label={t.themeNight} />
-                             <ThemeOption targetTheme={Theme.MODERN_LIGHT} icon={<Laptop size={14}/>} label={t.themeModernDay} />
-                             <ThemeOption targetTheme={Theme.MODERN_DARK} icon={<Laptop size={14}/>} label={t.themeModernNight} />
-                             <ThemeOption targetTheme={Theme.CLAY} icon={<Coffee size={14}/>} label={t.themeClay} />
-                             <ThemeOption targetTheme={Theme.BIOLUMINESCENCE} icon={<Zap size={14}/>} label={t.themeBiolum} />
-                        </div>
-                    )}
-                    <PixelButton 
-                        theme={theme} 
-                        variant="secondary" 
-                        className="w-9 h-9 !p-0 flex items-center justify-center" 
-                        title={t.changeTheme}
-                        onClick={() => {
-                            if (!showThemeMenu) setShowLangMenu(false);
-                            setShowThemeMenu(!showThemeMenu);
-                        }}
-                    >
-                        <Palette size={20} />
-                    </PixelButton>
-                </div>
 
-                <div className="relative" ref={langRef}>
-                    {showLangMenu && (
-                        <div className={`
-                            absolute bottom-full left-0 mb-2 w-32 
-                            ${styles.borderWidth} ${styles.borderColor} ${styles.radius}
-                            ${styles.secondary} ${styles.text} ${styles.shadow}
-                            flex flex-col z-[70] overflow-hidden
-                        `}>
-                             <LangOption targetLang="en" label="English" />
-                             <LangOption targetLang="zh" label="中文" />
-                             <LangOption targetLang="ja" label="日本語" />
-                        </div>
-                    )}
-                    <PixelButton 
-                        theme={theme} 
-                        variant="secondary" 
-                        className="w-9 h-9 !p-0 flex items-center justify-center" 
-                        title={t.changeLanguage}
-                        onClick={() => {
-                             if (!showLangMenu) setShowThemeMenu(false);
-                             setShowLangMenu(!showLangMenu);
-                        }}
-                    >
-                        <Globe size={20} />
-                    </PixelButton>
-                </div>
              </div>
              
              <div className="flex gap-2">

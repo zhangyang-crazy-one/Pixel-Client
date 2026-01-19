@@ -1,21 +1,76 @@
 
+ 
 
-
-import { LLMProvider, LLMModel, Theme, AceConfig, Language } from './types';
+import { LLMProvider, LLMModel, Theme, Language } from './types';
 import React from 'react';
 
 // ApexBridge Configuration
 export const API_BASE_URL = 'http://localhost:3000';
-export const API_KEY = import.meta.env.VITE_LLM_API_KEY || 'sk-apex-bridge-key';
+
+// Note: In production, ensure VITE_LLM_API_KEY is set in .env
+// The API key is required for LLM functionality
+export const API_KEY = import.meta.env.VITE_LLM_API_KEY || '';
+
+// ============================================================================
+// Backend Configuration (Persistent via localStorage)
+// ============================================================================
+
+const BACKEND_CONFIG_STORAGE_KEY = 'pixel_backend_config';
+
+export interface BackendConfig {
+  apiBaseUrl: string;
+  apiKey: string;
+}
+
+const DEFAULT_BACKEND_CONFIG: BackendConfig = {
+  apiBaseUrl: API_BASE_URL || 'http://localhost:3000',
+  apiKey: API_KEY,
+};
+
+/**
+ * Get backend configuration from localStorage
+ * Falls back to environment variables and defaults
+ */
+export function getBackendConfig(): BackendConfig {
+  try {
+    const stored = localStorage.getItem(BACKEND_CONFIG_STORAGE_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      return {
+        apiBaseUrl: parsed.apiBaseUrl || DEFAULT_BACKEND_CONFIG.apiBaseUrl,
+        apiKey: parsed.apiKey || DEFAULT_BACKEND_CONFIG.apiKey,
+      };
+    }
+  } catch (error) {
+    console.warn('Failed to load backend config from localStorage:', error);
+  }
+  return DEFAULT_BACKEND_CONFIG;
+}
+
+/**
+ * Save backend configuration to localStorage
+ */
+export function saveBackendConfig(config: BackendConfig): void {
+  try {
+    localStorage.setItem(BACKEND_CONFIG_STORAGE_KEY, JSON.stringify(config));
+  } catch (error) {
+    console.error('Failed to save backend config to localStorage:', error);
+  }
+}
+
+/**
+ * Clear backend configuration from localStorage
+ */
+export function clearBackendConfig(): void {
+  try {
+    localStorage.removeItem(BACKEND_CONFIG_STORAGE_KEY);
+  } catch (error) {
+    console.error('Failed to clear backend config from localStorage:', error);
+  }
+}
 
 export const INITIAL_PROVIDERS: LLMProvider[] = []; 
-export const INITIAL_MODELS: LLMModel[] = []; 
-
-export const INITIAL_ACE_CONFIG: AceConfig = {
-  fastModelId: '',
-  reflectorModelId: '',
-  curatorModelId: ''
-};
+export const INITIAL_MODELS: LLMModel[] = [];
 
 // Use React.createElement to avoid JSX syntax in .ts file
 export const PROVIDER_LOGOS: Record<string, React.ReactNode> = {
@@ -419,7 +474,14 @@ export const TRANSLATIONS = {
     error: 'ERROR',
     mcpStats: 'MCP SYSTEM STATS',
     uptime: 'UPTIME',
-    totalTools: 'TOTAL TOOLS'
+    totalTools: 'TOTAL TOOLS',
+
+    // Backend Config Translations
+    backend: 'BACKEND',
+    backendDesc: 'Configure backend connection settings.',
+    backendConfig: 'Backend Configuration',
+    backendNote: 'These settings override environment variables. Changes take effect immediately.',
+    resetToDefault: 'Reset to Default'
   },
   zh: {
     newChat: '新对话',
@@ -526,7 +588,14 @@ export const TRANSLATIONS = {
     error: '错误',
     mcpStats: 'MCP 系统统计',
     uptime: '运行时间',
-    totalTools: '工具总数'
+    totalTools: '工具总数',
+
+    // Backend Config Translations
+    backend: '后端设置',
+    backendDesc: '配置后端连接设置。',
+    backendConfig: '后端配置',
+    backendNote: '这些设置将覆盖环境变量。更改将立即生效。',
+    resetToDefault: '重置为默认'
   },
   ja: {
     newChat: '新規チャット',
@@ -633,6 +702,13 @@ export const TRANSLATIONS = {
     error: 'エラー',
     mcpStats: 'MCP システム統計',
     uptime: '稼働時間',
-    totalTools: 'ツール総数'
+    totalTools: 'ツール総数',
+
+    // Backend Config Translations
+    backend: 'バックエンド',
+    backendDesc: 'バックエンド接続設定を設定します。',
+    backendConfig: 'バックエンド設定',
+    backendNote: 'これらの設定は環境変数を上回ります。変更は即座に有効になります。',
+    resetToDefault: 'デフォルトにリセット'
   }
 };

@@ -167,29 +167,25 @@ pub struct McpServerManager {
     pub servers: Arc<RwLock<HashMap<String, RunningMcpServer>>>,
 }
 
-/// Thinking depth levels for Deep Thinking mode
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS)]
+/// Thinking depth levels for Deep Thinking mode (kept for compatibility, not used)
+#[allow(dead_code)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS, Default)]
 #[ts(export)]
 pub enum ThinkingDepth {
+    #[default]
     Surface,    // 浅层思考 - 标准回复
     Moderate,   // 中等思考 - 扩展推理
     Deep,       // 深度思考 - 详细步骤分析
 }
 
-impl Default for ThinkingDepth {
-    fn default() -> Self {
-        ThinkingDepth::Surface
-    }
-}
-
-/// Deep Thinking configuration per session
+/// Deep Thinking configuration per session (kept for compatibility, not used)
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct DeepThinkingConfig {
     pub enabled: bool,
     pub max_tokens: usize,
     pub temperature: f32,
-    pub 思考深度: ThinkingDepth,
     pub show_reasoning: bool,
     pub token_usage: usize,
     pub started_at: Option<u64>,
@@ -201,7 +197,6 @@ impl Default for DeepThinkingConfig {
             enabled: false,
             max_tokens: 8192,
             temperature: 0.7,
-            思考深度: ThinkingDepth::Moderate,
             show_reasoning: true,
             token_usage: 0,
             started_at: None,
@@ -209,7 +204,8 @@ impl Default for DeepThinkingConfig {
     }
 }
 
-/// Deep Thinking session status
+/// Deep Thinking session status (kept for compatibility, not used)
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct DeepThinkingStatus {
@@ -230,7 +226,8 @@ pub struct ReasoningBlock {
     pub timestamp: Option<u64>,
 }
 
-/// Parsed reasoning content
+/// Parsed reasoning content (kept for compatibility, not used)
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct ParsedReasoning {
@@ -252,11 +249,11 @@ pub struct ReasoningMessage {
     pub timestamp: u64,
     pub model_id: Option<String>,
     pub token_usage: Option<usize>,
-    pub is_deep_thinking: bool,
 }
 
 impl ReasoningMessage {
     /// Create a new ReasoningMessage from scratch
+    #[allow(dead_code)]
     pub fn new(id: String, role: String, content: String) -> Self {
         Self {
             id,
@@ -267,11 +264,11 @@ impl ReasoningMessage {
             timestamp: Utc::now().timestamp_millis() as u64,
             model_id: None,
             token_usage: None,
-            is_deep_thinking: false,
         }
     }
 
     /// Check if this message has reasoning content
+    #[allow(dead_code)]
     pub fn has_reasoning(&self) -> bool {
         self.reasoning_content.is_some() || !self.reasoning_blocks.is_empty()
     }
@@ -288,7 +285,6 @@ impl From<Message> for ReasoningMessage {
             timestamp: msg.timestamp,
             model_id: msg.model_id,
             token_usage: msg.token_usage,
-            is_deep_thinking: msg.is_deep_thinking,
         }
     }
 }
@@ -304,7 +300,6 @@ impl From<&Message> for ReasoningMessage {
             timestamp: msg.timestamp,
             model_id: msg.model_id.clone(),
             token_usage: msg.token_usage,
-            is_deep_thinking: msg.is_deep_thinking,
         }
     }
 }
@@ -316,23 +311,14 @@ pub struct McpTool {
     pub input_schema: Option<serde_json::Value>,
 }
 
-/// ACE Agent configuration
-#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+/// ACE Agent configuration (kept for compatibility, not used)
+#[allow(dead_code)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS, Default)]
 #[ts(export)]
 pub struct AceConfig {
     pub fast_model_id: String,
     pub reflector_model_id: String,
     pub curator_model_id: String,
-}
-
-impl Default for AceConfig {
-    fn default() -> Self {
-        Self {
-            fast_model_id: String::new(),
-            reflector_model_id: String::new(),
-            curator_model_id: String::new(),
-        }
-    }
 }
 
 /// Skill parameter definition (default as string to avoid TS constraint)
@@ -349,6 +335,7 @@ pub enum SkillParameterType {
 
 impl SkillParameterType {
     /// Parse from string for backward compatibility
+    #[allow(dead_code)]
     pub fn from_str(s: &str) -> Self {
         match s.to_lowercase().as_str() {
             "string" => Self::String,
@@ -361,6 +348,7 @@ impl SkillParameterType {
     }
 
     /// Convert to string for serialization
+    #[allow(dead_code)]
     pub fn as_str(&self) -> &'static str {
         match self {
             Self::String => "string",

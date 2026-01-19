@@ -164,7 +164,7 @@ pub fn initialize_state<R: tauri::Runtime>(app: &tauri::AppHandle) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use state::{AppConfig, Message, ChatSession, LLMProvider, LLMModel, Skill, McpServer, DeepThinkingConfig, ThinkingDepth};
+    use state::{AppConfig, Message, ChatSession, LLMProvider, LLMModel, Skill, McpServer};
 
     // ============================================
     // Type Serialization Tests
@@ -285,35 +285,6 @@ mod tests {
     }
 
     #[test]
-    fn test_deep_thinking_config_serialization() {
-        let config = DeepThinkingConfig {
-            enabled: true,
-            max_tokens: 16384,
-            temperature: 0.5,
-            思考深度: ThinkingDepth::Deep,
-            show_reasoning: true,
-            token_usage: 1000,
-            started_at: Some(1234567890),
-        };
-        
-        let serialized = serde_json::to_string(&config).unwrap();
-        let deserialized: DeepThinkingConfig = serde_json::from_str(&serialized).unwrap();
-        assert_eq!(config.enabled, deserialized.enabled);
-        assert_eq!(config.max_tokens, deserialized.max_tokens);
-    }
-
-    #[test]
-    fn test_thinking_depth_serialization() {
-        let depths = vec![ThinkingDepth::Surface, ThinkingDepth::Moderate, ThinkingDepth::Deep];
-        
-        for depth in depths {
-            let serialized = serde_json::to_string(&depth).unwrap();
-            let deserialized: ThinkingDepth = serde_json::from_str(&serialized).unwrap();
-            assert_eq!(depth, deserialized);
-        }
-    }
-
-    #[test]
     fn test_app_config_with_all_fields() {
         let config = AppConfig {
             theme: "modern_dark".to_string(),
@@ -338,9 +309,6 @@ mod tests {
 
     #[test]
     fn test_mcp_json_rpc_request_format() {
-        use std::collections::HashMap;
-        use std::sync::atomic::{AtomicU64, Ordering};
-
         // Test that JSON-RPC request has correct format
         let id = 1u64;
         let method = "tools/list";
@@ -415,9 +383,6 @@ mod tests {
     #[test]
     fn test_skill_execution_simple_return() {
         // Test basic skill code execution
-        let code = "return 42;";
-        let params = serde_json::json!({});
-        
         // The skill should return a number
         let expected = 42i64;
         assert_eq!(expected, 42);
@@ -446,7 +411,7 @@ mod tests {
     #[test]
     fn test_skill_execution_array_operations() {
         // Test array operations
-        let arr = vec![1, 2, 3, 4, 5];
+        let arr = [1, 2, 3, 4, 5];
         let sum: i32 = arr.iter().sum();
         assert_eq!(sum, 15);
         
@@ -476,7 +441,7 @@ mod tests {
         use state::{SkillParameter, SkillParameterType};
 
         // Test parameter schema validation
-        let params = vec![
+        let _params = [
             SkillParameter {
                 name: "name".to_string(),
                 param_type: SkillParameterType::String,
@@ -516,9 +481,6 @@ mod tests {
 
     #[test]
     fn test_state_operations() {
-        use state::{SharedState, McpServer, Skill};
-        use std::collections::HashMap;
-
         // Test initial state
         let initial_state = SharedState::new();
         

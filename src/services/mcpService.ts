@@ -4,11 +4,16 @@
  */
 
 import { apiClient } from '../../services/apiClient';
-import type { McpTool, McpServer, McpStats } from '../../types';
 
 // ============================================================================
 // Types
 // ============================================================================
+
+export interface McpTool {
+  name: string;
+  description: string;
+  inputSchema: unknown;
+}
 
 export interface McpServerFormData {
   serverType: string;
@@ -20,7 +25,11 @@ export interface McpServerFormData {
 export interface McpServerStatus {
   serverId: string;
   running: boolean;
-  tools: McpTool[];
+  tools: Array<{
+    name: string;
+    description: string;
+    inputSchema: unknown;
+  }>;
   error?: string;
 }
 

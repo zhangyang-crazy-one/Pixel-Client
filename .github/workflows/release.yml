@@ -50,7 +50,7 @@ jobs:
   # ============================================
   # Build - Linux x64
   # ============================================
-  build-linux-x64:
+  build-linux:
     name: Build Linux x64
     runs-on: ubuntu-22.04
     needs: create-release
@@ -74,7 +74,7 @@ jobs:
       - name: Build frontend
         run: bun run build
 
-      - name: Install system dependencies
+      - name: Install Tauri Dependencies (Linux)
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -87,95 +87,23 @@ jobs:
             libudev-dev \
             libssl-dev \
             build-essential \
-            pkg-config \
-            file \
-            patchelf \
-            curl \
-            wget
+            pkg-config
 
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: x86_64-unknown-linux-gnu
-
-      - name: Build Tauri app (Linux x64)
-        run: bun run tauri build --target x86_64-unknown-linux-gnu
+      - name: Build Tauri app (Linux)
+        run: bun run tauri build
         env:
           CI: true
 
-      - name: List build artifacts
-        run: ls -la src-tauri/target/release/bundle/ 2>/dev/null || echo "No bundle directory"
-
-      - name: Upload Linux x64 artifacts
+      - name: Upload Linux artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: linux-x64
-          path: src-tauri/target/release/bundle/
+          name: linux-build-x64
+          path: |
+            src-tauri/target/release/bundle/**
           retention-days: 7
 
   # ============================================
-  # Build - Linux arm64 (using arm-runner-action)
-  # ============================================
-  build-linux-arm64:
-    name: Build Linux arm64
-    runs-on: ubuntu-22.04
-    needs: create-release
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Build arm64 app using arm-runner-action
-        uses: pguyot/arm-runner-action@v2.6.5
-        with:
-          base_image: https://dietpi.com/downloads/images/DietPi_RPi5-ARMv8-Bookworm.img.xz
-          cpu: cortex-a72
-          bind_mount_repository: true
-          image_additional_mb: 10240
-          optimize_image: no
-          commands: |
-            export HOME=/root
-            export CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse
-
-            apt-get update -y --allow-releaseinfo-change
-            apt-get autoremove -y
-            apt-get install -y --no-install-recommends --no-install-suggests \
-              curl \
-              libwebkit2gtk-4.1-dev \
-              build-essential \
-              libssl-dev \
-              libgtk-3-dev \
-              libayatana-appindicator3-dev \
-              librsvg2-dev \
-              patchelf \
-              libfuse2 \
-              file
-
-            curl https://sh.rustup.rs -sSf | sh -s -- -y
-            . "$HOME/.cargo/env"
-            rustup target add aarch64-unknown-linux-gnu
-
-            curl -fsSL https://deb.nodesource.com/setup_lts.x | bash
-            apt-get install -y nodejs
-
-            cd /github/workspace
-            bun install
-            bun run build
-            bun run tauri build --target aarch64-unknown-linux-gnu
-
-            ls -la src-tauri/target/release/bundle/
-
-      - name: Get app version
-        run: echo "APP_VERSION=$(jq -r .version src-tauri/tauri.conf.json)" >> $GITHUB_ENV
-
-      - name: Upload Linux arm64 artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: linux-arm64
-          path: src-tauri/target/release/bundle/
-          retention-days: 7
-
-  # ============================================
-  # Build - Windows
+  # Build - Windows x64
   # ============================================
   build-windows:
     name: Build Windows x64
@@ -201,47 +129,76 @@ jobs:
       - name: Build frontend
         run: bun run build
 
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: x86_64-pc-windows-msvc
-
       - name: Build Tauri app (Windows)
-        run: bun run tauri build --target x86_64-pc-windows-msvc
+        run: bun run tauri build
         env:
           CI: true
-
-      - name: List build artifacts
-        run: ls -la src-tauri/target/release/bundle/ 2>/dev/null || echo "No bundle directory"
 
       - name: Upload Windows artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: windows-x64
-          path: src-tauri/target/release/bundle/
+          name: windows-build-x64
+          path: |
+            src-tauri/target/release/bundle/**
           retention-days: 7
 
   # ============================================
-  # Upload Release Assets
+  # Merge and Upload Release Assets
   # ============================================
   upload-assets:
     name: Upload Release Assets
     runs-on: ubuntu-22.04
-    needs: [create-release, build-linux-x64, build-linux-arm64, build-windows]
+    needs: [create-release, build-linux, build-windows]
     steps:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
-          path: artifacts
+          path: all-artifacts
           merge-multiple: true
 
-      - name: Upload to Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: artifacts/**
-          generate_release_notes: false
+      - name: List all artifacts
+        run: |
+          echo "=== All artifacts ==="
+          find all-artifacts -type f \( -name "*.exe" -o -name "*.msi" -o -name "*.dmg" -o -name "*.deb" -o -name "*.AppImage" \) | head -20
+
+      - name: Upload to Release using GitHub CLI
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          cd all-artifacts
+
+          # Upload .deb package
+          for deb in deb/*.deb; do
+            if [ -f "$deb" ]; then
+              echo "Uploading $deb..."
+              gh release upload "$TAG_NAME" "$deb" --repo ${{ github.repository }} || echo "Upload failed for $deb"
+            fi
+          done
+
+          # Upload .AppImage package
+          for appimage in appimage/*.AppImage; do
+            if [ -f "$appimage" ]; then
+              echo "Uploading $appimage..."
+              gh release upload "$TAG_NAME" "$appimage" --repo ${{ github.repository }} || echo "Upload failed for $appimage"
+            fi
+          done
+
+          # Upload .exe package
+          for exe in nsis/*.exe; do
+            if [ -f "$exe" ]; then
+              echo "Uploading $exe..."
+              gh release upload "$TAG_NAME" "$exe" --repo ${{ github.repository }} || echo "Upload failed for $exe"
+            fi
+          done
+
+          # Upload .msi package
+          for msi in msi/*.msi; do
+            if [ -f "$msi" ]; then
+              echo "Uploading $msi..."
+              gh release upload "$TAG_NAME" "$msi" --repo ${{ github.repository }} || echo "Upload failed for $msi"
+            fi
+          done
 
   # ============================================
   # Verification
@@ -258,7 +215,6 @@ jobs:
           echo "==========================================="
           echo "Built for:"
           echo "  - Linux x64 (x86_64)"
-          echo "  - Linux arm64 (aarch64)"
           echo "  - Windows x64"
           echo ""
           echo "macOS: 需要本地构建 (需要 Apple 证书)"

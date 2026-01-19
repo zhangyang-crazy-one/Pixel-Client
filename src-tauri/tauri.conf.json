@@ -5,25 +5,27 @@
   "identifier": "com.pixel.client",
   "build": {
     "devUrl": "http://localhost:5173",
-    "beforeDevCommand": "bun run dev:vite",
+    "beforeDevCommand": "bunx vite",
     "beforeBuildCommand": "bun run build",
     "frontendDist": "../dist"
   },
   "app": {
     "withGlobalTauri": true,
     "windows": [
-{
-      "title": "Pixel-Client",
-      "width": 1200,
-      "height": 800,
-      "minWidth": 800,
-      "minHeight": 600,
-      "resizable": true,
-      "fullscreen": false,
-      "decorations": false,
-      "transparent": false,
-      "alwaysOnTop": false
-    }
+      {
+        "title": "Pixel-Client",
+        "width": 1200,
+        "height": 800,
+        "minWidth": 800,
+        "minHeight": 600,
+        "resizable": true,
+        "fullscreen": false,
+        "decorations": false,
+        "transparent": false,
+        "alwaysOnTop": false,
+        "center": true,
+        "skipTaskbar": false
+      }
     ],
     "security": {
       "csp": null
@@ -32,18 +34,6 @@
   "bundle": {
     "active": true,
     "targets": "all",
-    "linux": {
-      "deb": true,
-      "appimage": true,
-      "rpm": true
-    },
-    "windows": {
-      "nsis": true,
-      "wix": true
-    },
-    "macOS": {
-      "dmg": true
-    },
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
