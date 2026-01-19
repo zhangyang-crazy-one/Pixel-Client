@@ -1,12 +1,15 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useMemo } from 'react';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { Minus, Square, X, Copy } from 'lucide-react';
-import { isMacOS, isWindows, isLinux, getPlatform } from '@/platform';
+import { isMacOS, isLinux, getPlatform } from '@/platform';
 
 interface CustomTitlebarProps {
   title?: string;
   className?: string;
 }
+
+// Tauri runtime check
+const isTauri = typeof window !== 'undefined' && '__TAURI__' in window;
 
 /**
  * Cross-platform custom window titlebar
@@ -16,57 +19,76 @@ interface CustomTitlebarProps {
  * - macOS: Traffic lights on left, true close behavior, transparent background
  * - Windows: Controls on right, hide to tray on close, pixel theme styling
  * - Linux: Controls on right, hide to tray on close, native-like styling
+ *
+ * Bug fixes applied:
+ * - Use useMemo to cache getCurrentWindow() preventing callback ID mismatch
+ * - Remove onResized listener to prevent UI blocking from high-frequency IPC
+ * - Update maximize state only on button click
  */
 export function CustomTitlebar({ title = 'Pixel-Client', className = '' }: CustomTitlebarProps) {
+  // Return null in browser-only dev mode
+  if (!isTauri) {
+    return null;
+  }
+
   const [isMaximized, setIsMaximized] = useState(false);
   const [platform, setPlatform] = useState<'windows' | 'macos' | 'linux'>('windows');
-  const appWindow = getCurrentWindow();
+
+  // Memoize window instance - only initialize once to prevent callback ID issues
+  const appWindow = useMemo(() => getCurrentWindow(), []);
 
   // Detect platform on mount
   useEffect(() => {
     setPlatform(getPlatform());
   }, []);
 
-  // Check initial maximized state
+  // Check initial maximized state only once on mount (no onResized listener)
   useEffect(() => {
-    const checkMaximized = async () => {
-      const maximized = await appWindow.isMaximized();
-      setIsMaximized(maximized);
-    };
-    checkMaximized();
-
-    // Listen for window resize events to update maximize state
-    const unlisten = appWindow.onResized(async () => {
-      const maximized = await appWindow.isMaximized();
-      setIsMaximized(maximized);
-    });
-
-    return () => {
-      unlisten.then((fn) => fn());
-    };
+    appWindow.isMaximized().then(setIsMaximized).catch(() => {});
   }, [appWindow]);
 
   const handleMinimize = useCallback(async () => {
-    await appWindow.minimize();
+    try {
+      await appWindow.minimize();
+    } catch (e) {
+      console.error('[Titlebar] Minimize failed:', e);
+    }
   }, [appWindow]);
 
   const handleMaximize = useCallback(async () => {
-    await appWindow.toggleMaximize();
+    try {
+      await appWindow.toggleMaximize();
+      // Update state after toggle instead of relying on resize events
+      const maximized = await appWindow.isMaximized();
+      setIsMaximized(maximized);
+    } catch (e) {
+      console.error('[Titlebar] Maximize failed:', e);
+    }
   }, [appWindow]);
 
   const handleClose = useCallback(async () => {
-    if (isMacOS()) {
-      // On macOS, truly close the window (not hide to tray)
-      await appWindow.close();
-    } else {
-      // On Windows/Linux, hide to tray
-      await appWindow.hide();
+    try {
+      if (isMacOS()) {
+        // On macOS, truly close the window (not hide to tray)
+        await appWindow.close();
+      } else {
+        // On Windows/Linux, hide to tray
+        await appWindow.hide();
+      }
+    } catch (e) {
+      console.error('[Titlebar] Close failed:', e);
     }
   }, [appWindow]);
 
   const handleDoubleClick = useCallback(async () => {
     if (!isMacOS()) {
-      await appWindow.toggleMaximize();
+      try {
+        await appWindow.toggleMaximize();
+        const maximized = await appWindow.isMaximized();
+        setIsMaximized(maximized);
+      } catch (e) {
+        console.error('[Titlebar] Double-click maximize failed:', e);
+      }
     }
   }, [appWindow]);
 

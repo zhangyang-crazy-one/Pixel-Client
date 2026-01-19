@@ -112,8 +112,6 @@
 
 /* Pixel theme adjustments */
 .theme-pixel .custom-titlebar {
-  border-bottom: 4px solid #ff00ff;
-  box-shadow: inset 0 -2px 0 0 #00ffff;
 }
 
 .theme-pixel .titlebar-button {
@@ -217,24 +215,24 @@
 }
 
 /* macOS pixel theme */
-.theme-pixel.custom-titlebar-macos {
+.theme-pixel .custom-titlebar-macos {
   background: transparent;
 }
 
-.theme-pixel.custom-titlebar-macos .traffic-light-close:hover {
+.theme-pixel .custom-titlebar-macos .traffic-light-close:hover {
   background: rgba(255, 0, 0, 0.3);
 }
 
-.theme-pixel.custom-titlebar-macos .traffic-light-minimize:hover {
+.theme-pixel .custom-titlebar-macos .traffic-light-minimize:hover {
   background: rgba(0, 255, 255, 0.3);
 }
 
-.theme-pixel.custom-titlebar-macos .traffic-light-maximize:hover {
+.theme-pixel .custom-titlebar-macos .traffic-light-maximize:hover {
   background: rgba(255, 0, 255, 0.3);
 }
 
 /* macOS modern theme */
-.theme-modern.custom-titlebar-macos {
+.theme-modern .custom-titlebar-macos {
   background: transparent;
 }
 
@@ -249,7 +247,6 @@
 .custom-titlebar-linux .titlebar-button {
   width: 40px;
   height: 36px;
-  color: #cccccc;
 }
 
 .custom-titlebar-linux .titlebar-button:hover {
@@ -265,44 +262,51 @@
 .custom-titlebar-linux .titlebar-text {
   font-family: 'Inter', 'Noto Sans SC', sans-serif;
   font-size: 14px;
-  color: #ffffff;
   letter-spacing: normal;
   text-transform: none;
 }
 
 /* Linux pixel theme */
-.theme-pixel.custom-titlebar-linux {
+.theme-pixel .custom-titlebar-linux {
   background: linear-gradient(180deg, #2d2b40 0%, #1a1a2e 100%);
-  border-bottom: 2px solid #ff00ff;
 }
 
-.theme-pixel.custom-titlebar-linux .titlebar-button:hover {
+.theme-pixel .custom-titlebar-linux .titlebar-button {
+  color: #a0a0a0;
+}
+
+.theme-pixel .custom-titlebar-linux .titlebar-button:hover {
   background: #ff00ff;
   color: #000000;
 }
 
-.theme-pixel.custom-titlebar-linux .titlebar-close:hover {
+.theme-pixel .custom-titlebar-linux .titlebar-close:hover {
   background: #ff0000;
   color: #ffffff;
 }
 
 /* Linux modern theme */
-.theme-modern.custom-titlebar-linux {
-  background: linear-gradient(180deg, #3c3c3c 0%, #2d2d2d 100%);
-  border-bottom: 1px solid #555;
+.theme-modern .custom-titlebar-linux {
+  background: linear-gradient(180deg, #f5f5f5 0%, #e8e8e8 100%);
+  border-bottom: 1px solid #d0d0d0;
 }
 
-.theme-modern.custom-titlebar-linux .titlebar-text {
+.theme-modern .custom-titlebar-linux .titlebar-button {
+  color: #666666;
+}
+
+.theme-modern .custom-titlebar-linux .titlebar-button:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: #333333;
+}
+
+.theme-modern .custom-titlebar-linux .titlebar-close:hover {
+  background: #e81123;
   color: #ffffff;
 }
 
-.theme-modern.custom-titlebar-linux .titlebar-button {
-  color: #cccccc;
-}
-
-.theme-modern.custom-titlebar-linux .titlebar-button:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
+.theme-modern .custom-titlebar-linux .titlebar-text {
+  color: #333333;
 }
 
 /* Platform indicator helper (for debugging) */
