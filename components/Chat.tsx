@@ -813,15 +813,13 @@ export const Chat: React.FC<ChatProps> = ({
           className="flex-1 p-4"
           data={displayMessages}
           itemContent={(index, msg) => (
-            <div className="space-y-6">
-              <MessageBubble
-                msg={msg}
-                theme={theme}
-                language={language}
-                isStreaming={isStreaming && index === displayMessages.length - 1 && searchQuery === ''}
-                isLast={index === displayMessages.length - 1}
-              />
-            </div>
+            <MessageBubble
+              msg={msg}
+              theme={theme}
+              language={language}
+              isStreaming={isStreaming && index === displayMessages.length - 1 && searchQuery === ''}
+              isLast={index === displayMessages.length - 1}
+            />
           )}
           followOutput={searchQuery ? false : (shouldAutoScrollRef.current ? 'smooth' : false)}
           scrollerRef={handleScrollerRef}
