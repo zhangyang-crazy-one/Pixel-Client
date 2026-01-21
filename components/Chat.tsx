@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef, useMemo, useLayoutEffect } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useLayoutEffect, useCallback } from 'react';
 import { Theme, Message, LLMModel, LLMProvider, Language } from '../types';
 import { PixelButton } from './PixelUI';
 import { THEME_STYLES, TRANSLATIONS } from '../constants';
@@ -671,18 +671,21 @@ export const Chat: React.FC<ChatProps> = ({
     );
   }, [messages, searchQuery]);
 
-  const handleScroll = () => {
-      if (!scrollRef.current) return;
-      const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
-      const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
-      const isNearBottom = distanceFromBottom < 100;
-      shouldAutoScrollRef.current = isNearBottom;
-  };
+  // Virtuoso scroll container ref for threshold detection
+  const virtuosoScrollerRef = useRef<HTMLDivElement>(null);
+
+  const handleScroll = useCallback(() => {
+    if (!virtuosoScrollerRef.current) return;
+    const { scrollTop, scrollHeight, clientHeight } = virtuosoScrollerRef.current;
+    const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+    const isNearBottom = distanceFromBottom < 100;
+    shouldAutoScrollRef.current = isNearBottom;
+  }, []);
 
   useLayoutEffect(() => {
-      if (scrollRef.current && shouldAutoScrollRef.current && !searchQuery) {
-          scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-      }
+    if (virtuosoScrollerRef.current && shouldAutoScrollRef.current && !searchQuery) {
+      virtuosoScrollerRef.current.scrollTop = virtuosoScrollerRef.current.scrollHeight;
+    }
   }, [messages, searchQuery]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -796,23 +799,28 @@ export const Chat: React.FC<ChatProps> = ({
         </div>
       ) : (
         <Virtuoso
-          className="flex-1 p-4"
+          className="flex-1 p-4 space-y-6"
           data={displayMessages}
           itemContent={(index, msg) => (
-            <div className="space-y-6">
-              <MessageBubble
-                msg={msg}
-                theme={theme}
-                language={language}
-                isStreaming={isStreaming && index === displayMessages.length - 1}
-                isLast={index === displayMessages.length - 1}
-              />
-            </div>
+            <MessageBubble
+              msg={msg}
+              theme={theme}
+              language={language}
+              isStreaming={isStreaming && index === displayMessages.length - 1 && searchQuery === ''}
+              isLast={index === displayMessages.length - 1}
+            />
           )}
           followOutput={searchQuery ? false : (shouldAutoScrollRef.current ? 'smooth' : false)}
+          scrollerRef={(ref) => {
+            if (ref) {
+              virtuosoScrollerRef.current = ref as HTMLDivElement;
+              ref.addEventListener('scroll', handleScroll);
+            }
+          }}
           atBottomStateChange={(atBottom) => {
             shouldAutoScrollRef.current = atBottom;
           }}
+          alignToBottom
           overscan={200}
         />
       )}
