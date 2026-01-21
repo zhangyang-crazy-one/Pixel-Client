@@ -12,6 +12,7 @@ import rehypeRaw from 'rehype-raw';
 import { MermaidBlock } from './MermaidBlock';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { Virtuoso } from 'react-virtuoso';
 
 interface ChatProps {
   theme: Theme;
@@ -783,34 +784,38 @@ export const Chat: React.FC<ChatProps> = ({
 
   return (
     <div className={`flex flex-col h-full relative z-10 ${styles.font}`}>
-      <div 
-        className="flex-1 overflow-y-auto p-4 space-y-6 relative z-10" 
-        ref={scrollRef}
-        onScroll={handleScroll}
-      >
-        {messages.length === 0 ? (
-           <div className={`flex flex-col items-center justify-center h-full opacity-50 select-none ${styles.text}`}>
-             <div className="text-6xl mb-4 animate-bounce">🎮</div>
-             <div className="text-xl">{t.selectModelStart}</div>
-           </div>
-        ) : displayMessages.length === 0 ? (
-           <div className={`flex flex-col items-center justify-center h-full opacity-50 select-none ${styles.text}`}>
-             <div className="text-4xl mb-4">🔍</div>
-             <div className="text-xl">{t.noMessagesFound}</div>
-           </div>
-        ) : (
-          displayMessages.map((msg, index) => (
-            <MessageBubble 
-                key={msg.id}
+      {messages.length === 0 ? (
+        <div className={`flex-1 flex flex-col items-center justify-center opacity-50 select-none ${styles.text}`}>
+          <div className="text-6xl mb-4 animate-bounce">🎮</div>
+          <div className="text-xl">{t.selectModelStart}</div>
+        </div>
+      ) : displayMessages.length === 0 ? (
+        <div className={`flex-1 flex flex-col items-center justify-center opacity-50 select-none ${styles.text}`}>
+          <div className="text-4xl mb-4">🔍</div>
+          <div className="text-xl">{t.noMessagesFound}</div>
+        </div>
+      ) : (
+        <Virtuoso
+          className="flex-1 p-4"
+          data={displayMessages}
+          itemContent={(index, msg) => (
+            <div className="space-y-6">
+              <MessageBubble
                 msg={msg}
                 theme={theme}
                 language={language}
-                isStreaming={isStreaming}
-                isLast={index === messages.length - 1}
-            />
-          ))
-        )}
-      </div>
+                isStreaming={isStreaming && index === displayMessages.length - 1}
+                isLast={index === displayMessages.length - 1}
+              />
+            </div>
+          )}
+          followOutput={searchQuery ? false : (shouldAutoScrollRef.current ? 'smooth' : false)}
+          atBottomStateChange={(atBottom) => {
+            shouldAutoScrollRef.current = atBottom;
+          }}
+          overscan={200}
+        />
+      )}
 
       <div className={`p-4 ${styles.headerBorder} ${styles.secondary} relative z-[70]`}>
         <div className="relative">
